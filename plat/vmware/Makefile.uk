@@ -1,5 +1,5 @@
 ##
-## VMware platform registration
+## VMWare platform registration
 ##
 $(eval $(call addplat_s,vmware,$(CONFIG_PLAT_VMWARE)))
 
