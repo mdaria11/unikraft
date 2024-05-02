@@ -1,0 +1,3 @@
+config VMWARE_DEVICE
+	bool
+	default y if PLAT_VMWARE

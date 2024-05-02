@@ -157,6 +157,13 @@ struct pci_device {
 	struct pci_driver     *drv;
 	enum pci_device_state state;
 
+	__u32 bar0;
+	__u32 bar1;
+	__u32 bar2;
+	__u32 bar3;
+	__u32 bar4;
+	__u32 bar5;
+
 	unsigned long base;
 	unsigned long irq;
 };

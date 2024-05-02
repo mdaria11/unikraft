@@ -21,3 +21,9 @@ menu "Xen"
 source "$(shell,$(UK_BASE)/support/build/config-submenu.sh -q -o '$(KCONFIG_DIR)/drivers-xen.uk' -r '$(KCONFIG_DRIV_BASE)/xen' -l '$(KCONFIG_DRIV_BASE)/xen' -e '$(KCONFIG_EXCLUDEDIRS)')"
 
 endmenu
+
+menu "VMware"
+
+source "$(shell,$(UK_BASE)/support/build/config-submenu.sh -q -o '$(KCONFIG_DIR)/drivers-vmware.uk' -r '$(KCONFIG_DRIV_BASE)/vmware' -l '$(KCONFIG_DRIV_BASE)/vmware' -e '$(KCONFIG_EXCLUDEDIRS)')"
+
+endmenu

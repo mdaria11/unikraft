@@ -52,7 +52,6 @@ config VMWARE_KERNEL_SERIAL_CONSOLE
 
 if (VMWARE_KERNEL_SERIAL_CONSOLE || VMWARE_DEBUG_SERIAL_CONSOLE)
 
-if ARCH_X86_64
 menu "Serial console configuration"
 choice
 	prompt "Baudrate"
@@ -71,7 +70,6 @@ choice
 		bool "19200"
 endchoice
 endmenu
-endif
 endif
 endmenu
 endif

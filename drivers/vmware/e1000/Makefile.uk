@@ -1,0 +1,18 @@
+$(eval $(call addlib_s,e1000,$(CONFIG_E1000)))
+
+E1000_CINCLUDES-y    += -I$(E1000_BASE)/include
+
+# common e1000 headers
+E1000_CINCLUDES-y += -I$(LIBUKBUS_PCI_BASE)/include
+
+# TODO Remove as soon as plat dependencies go away
+E1000_CINCLUDES-y  += -I$(UK_PLAT_COMMON_BASE)/include
+
+E1000_SRCS-y += $(E1000_BASE)/e1000_82540.c
+E1000_SRCS-y += $(E1000_BASE)/e1000_api.c
+E1000_SRCS-y += $(E1000_BASE)/e1000_mac.c
+E1000_SRCS-y += $(E1000_BASE)/e1000_nvm.c
+E1000_SRCS-y += $(E1000_BASE)/e1000_phy.c
+E1000_SRCS-y += $(E1000_BASE)/e1000_mbx.c
+E1000_SRCS-y += $(E1000_BASE)/em_rxtx.c
+E1000_SRCS-y += $(E1000_BASE)/em_ethdev.c
