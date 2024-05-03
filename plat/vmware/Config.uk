@@ -14,7 +14,6 @@ menuconfig PLAT_VMWARE
 	imply LIBVIRTIO_NET if LIBUKNETDEV
 	imply LIBVIRTIO_BLK if LIBUKBLKDEV
 	select HAVE_PCI
-	select HAVE_MMIO
 	help
 		Create a Unikraft image that runs as a VMware guest
 

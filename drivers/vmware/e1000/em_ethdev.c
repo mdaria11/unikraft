@@ -160,8 +160,8 @@ eth_em_dev_init(struct pci_device * pci_dev)
 	// hw->hw_addr = (void *)pci_dev->mem_resource[0].addr;
 	// hw->hw_addr = (void *)pci_dev->base;
 
-	//hw->hw_addr = (void *)(hw->pdev->bar0 & 0xFFFFFFF0);
-	//uk_pr_info("hw->hw_addr %p, hw->pdev->bar0 %p\n", hw->hw_addr, hw->pdev->bar0);
+	hw->hw_addr = (void *)(hw->pdev->bar0 & 0xFFFFFFF0);
+	uk_pr_info("hw->hw_addr %p, hw->pdev->bar0 %p\n", hw->hw_addr, hw->pdev->bar0);
 
 	hw->device_id = pci_dev->id.device_id;
 	// adapter->stopped = 0;
