@@ -27,7 +27,7 @@ static void vmxnet3_tq_tx_complete(struct uk_netdev_tx_queue *);
 static void
 vmxnet3_tx_cmd_ring_release_mbufs(vmxnet3_cmd_ring_t *ring)
 {
-	debug_uk_pr_info("vmxnet3_tx_cmd_ring_release_mbufs\n");
+	uk_pr_err("vmxnet3_tx_cmd_ring_release_mbufs\n");
 
 	while (ring->next2comp != ring->next2fill) {
 		/* No need to worry about desc ownership, device is quiesced by now. */
@@ -48,7 +48,7 @@ vmxnet3_rx_cmd_ring_release_mbufs(vmxnet3_cmd_ring_t *ring)
 {
 	uint32_t i;
 
-	debug_uk_pr_info("vmxnet3_rx_cmd_ring_release_mbufs\n");
+	uk_pr_err("vmxnet3_rx_cmd_ring_release_mbufs\n");
 
 	for (i = 0; i < ring->size; i++) {
 		/* No need to worry about desc ownership, device is quiesced by now. */
@@ -67,7 +67,7 @@ vmxnet3_rx_cmd_ring_release_mbufs(vmxnet3_cmd_ring_t *ring)
 static void
 vmxnet3_cmd_ring_release(vmxnet3_cmd_ring_t *ring)
 {
-	debug_uk_pr_info("vmxnet3_cmd_ring_release\n");
+	uk_pr_err("vmxnet3_cmd_ring_release\n");
 
 	uk_free(ring->a, ring->buf_info);
 	ring->buf_info = NULL;
@@ -78,7 +78,7 @@ vmxnet3_dev_tx_queue_release(struct uk_netdev *dev, uint16_t qid)
 {
 	struct uk_netdev_tx_queue *tq = dev->_tx_queue[qid];
 
-	debug_uk_pr_info("vmxnet3_dev_tx_queue_release\n");
+	uk_pr_err("vmxnet3_dev_tx_queue_release\n");
 
 	if (tq != NULL) {
 		/* Release mbufs */
@@ -98,7 +98,7 @@ vmxnet3_dev_rx_queue_release(struct uk_netdev *dev, uint16_t qid)
 	int i;
 	struct uk_netdev_rx_queue *rq = dev->_rx_queue[qid];
 
-	debug_uk_pr_info("vmxnet3_dev_rx_queue_release\n");
+	uk_pr_err("vmxnet3_dev_rx_queue_release\n");
 
 	if (rq != NULL) {
 		/* Release mbufs */
@@ -276,7 +276,7 @@ int vmxnet3_xmit_pkts(__unused struct uk_netdev *dev,
 	Vmxnet3_TxQueueCtrl *txq_ctrl = &txq->shared->ctrl;
 	uint32_t deferred = txq_ctrl->txNumDeferred;
 
-	debug_uk_pr_info("vmxnet3_xmit_pkts\n");
+	uk_pr_err("vmxnet3_xmit_pkts\n");
 
 	if (unlikely(txq->stopped)) {
 		uk_pr_err("Tx queue is stopped.\n");
@@ -736,7 +736,7 @@ vmxnet3_dev_tx_queue_setup(struct uk_netdev *dev,
 	struct vmxnet3_data_ring *data_ring;
 	int size;
 
-	debug_uk_pr_info("vmxnet3_dev_tx_queue_setup\n");
+	uk_pr_err("vmxnet3_dev_tx_queue_setup\n");
 
 	txq = uk_calloc(hw->a, 1, sizeof(struct uk_netdev_tx_queue));
 	if (txq == NULL) {
@@ -996,7 +996,7 @@ vmxnet3_dev_rxtx_init(struct uk_netdev *dev)
 	int i, ret;
 	uint8_t j;
 
-	debug_uk_pr_info("vmxnet3_dev_rxtx_init\n");
+	uk_pr_err("vmxnet3_dev_rxtx_init\n");
 
 	for (i = 0; i < hw->num_rx_queues; i++) {
 		struct uk_netdev_rx_queue *rxq = dev->_rx_queue[i];

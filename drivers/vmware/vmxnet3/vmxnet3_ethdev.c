@@ -222,7 +222,7 @@ vmxnet3_add_dev(struct pci_device * pci_dev)
 	// struct vmxnet3_hw *hw = to_vmxnet3dev(pci_dev);
 	uint32_t mac_hi, mac_lo, ver;
 
-	debug_uk_pr_info("vmxnet3_add_dev\n");
+	uk_pr_err("vmxnet3_add_dev\n");
     UK_ASSERT(pci_dev != NULL);
 
 	hw = uk_calloc(a, sizeof(*hw), 1);
@@ -246,7 +246,7 @@ vmxnet3_add_dev(struct pci_device * pci_dev)
 	// hw->hw_addr1 = pci_dev->irq;
 	hw->hw_addr1 = pci_dev->bar1;
 	hw->hw_addr0 = pci_dev->bar0;
-	debug_uk_pr_info("hw->hw_addr0 = %p, hw->hw_addr1 = %p\n", hw->hw_addr0, hw->hw_addr1);
+	uk_pr_err("hw->hw_addr0 = %p, hw->hw_addr1 = %p\n", hw->hw_addr0, hw->hw_addr1);
 	// debug_uk_pr_info("pci_dev->base = %p, pci_dev->irq = %p\n", pci_dev->base, pci_dev->irq);
 
 	rc = uk_netdev_drv_register(&hw->netdev, a, drv_name);
@@ -259,7 +259,7 @@ vmxnet3_add_dev(struct pci_device * pci_dev)
 
 	/* Check h/w version compatibility with driver. */
 	ver = VMXNET3_READ_BAR1_REG(hw, VMXNET3_REG_VRRS);
-	debug_uk_pr_info("Hardware version: %d\n", ver);
+	uk_pr_err("Hardware version: %d\n", ver);
 
 	if (ver & (1 << VMXNET3_REV_4)) {
 		VMXNET3_WRITE_BAR1_REG(hw, VMXNET3_REG_VRRS,
@@ -282,11 +282,11 @@ vmxnet3_add_dev(struct pci_device * pci_dev)
 		return -EIO;
 	}
 
-	debug_uk_pr_info("Using device v%d\n", hw->version);
+	uk_pr_err("Using device v%d\n", hw->version);
 
 	/* Check UPT version compatibility with driver. */
 	ver = VMXNET3_READ_BAR1_REG(hw, VMXNET3_REG_UVRS);
-	debug_uk_pr_info("UPT hardware version: %d\n", ver);
+	uk_pr_err("UPT hardware version: %d\n", ver);
 	if (ver & 0x1)
 		VMXNET3_WRITE_BAR1_REG(hw, VMXNET3_REG_UVRS, 1);
 	else {
@@ -355,7 +355,7 @@ vmxnet3_alloc_intr_resources(struct uk_netdev *dev)
 	uint32_t cfg;
 	int nvec = 1; /* for link event */
 
-	debug_uk_pr_info("vmxnet3_alloc_intr_resources\n");
+	uk_pr_err("vmxnet3_alloc_intr_resources\n");
 
 	/* intr settings */
 	VMXNET3_WRITE_BAR1_REG(hw, VMXNET3_REG_CMD,
@@ -392,7 +392,7 @@ vmxnet3_dev_configure(struct uk_netdev *dev,
 	struct vmxnet3_hw *hw = to_vmxnet3dev(dev);
 	size_t size;
 
-	debug_uk_pr_info("Configure vmxnet3\n");
+	uk_pr_err("Configure vmxnet3\n");
 
 
 	if (conf->nb_tx_queues > VMXNET3_MAX_TX_QUEUES ||
@@ -463,9 +463,9 @@ vmxnet3_write_mac(struct vmxnet3_hw *hw, const uint8_t *addr)
 {
 	uint32_t val;
 
-	debug_uk_pr_info("vmxnet3_write_mac\n");
+	uk_pr_err("vmxnet3_write_mac\n");
 
-	debug_uk_pr_info("Writing MAC Address: %hhx:%hhx:%hhx:%hhx:%hhx:%hhx\n",
+	uk_pr_err("Writing MAC Address: %hhx:%hhx:%hhx:%hhx:%hhx:%hhx\n",
 		     addr[0], addr[1], addr[2],
 		     addr[3], addr[4], addr[5]);
 
@@ -487,7 +487,7 @@ vmxnet3_setup_driver_shared(struct uk_netdev *dev)
 
 	hw->mtu = mtu;
 
-	debug_uk_pr_info("vmxnet3_setup_driver_shared\n");
+	uk_pr_err("vmxnet3_setup_driver_shared\n");
 
 	shared->magic = VMXNET3_REV1_MAGIC;
 	devRead->misc.driverInfo.version = VMXNET3_DRIVER_VERSION_NUM;
@@ -812,7 +812,7 @@ vmxnet3_mac_addr_set(struct uk_netdev *dev, const struct uk_hwaddr *mac_addr)
 {
 	struct vmxnet3_hw *hw = to_vmxnet3dev(dev);
 
-	debug_uk_pr_info("vmxnet3_mac_addr_set\n");
+	uk_pr_err("vmxnet3_mac_addr_set\n");
 
 	// memcpy(mac_addr, (struct uk_hwaddr *)(hw->perm_addr), UK_NETDEV_HWADDR_LEN * sizeof(uint8_t));
 	vmxnet3_write_mac(hw, mac_addr->addr_bytes);
@@ -824,7 +824,7 @@ vmxnet3_mac_addr_get(struct uk_netdev *dev)
 {
 	struct vmxnet3_hw *hw;
 	
-	debug_uk_pr_info("vmxnet3_mac_addr_get\n");
+	uk_pr_err("vmxnet3_mac_addr_get\n");
 	
 	hw = to_vmxnet3dev(dev);
 	UK_ASSERT(hw);
