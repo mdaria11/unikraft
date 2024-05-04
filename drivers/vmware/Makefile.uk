@@ -7,3 +7,4 @@
 UK_DRIV_LIBVMWARE_BASE := $(UK_DRIV_BASE)/vmware
 
 $(eval $(call import_lib,$(UK_DRIV_LIBVMWARE_BASE)/e1000))
+$(eval $(call import_lib,$(UK_DRIV_LIBVMWARE_BASE)/vmxnet3))

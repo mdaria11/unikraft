@@ -1,0 +1,12 @@
+$(eval $(call addlib_s,vmxnet3,$(CONFIG_VMXNET3)))
+
+VMXNET3_CINCLUDES-y    += -I$(VMXNET3_BASE)/include
+
+# common vmxnet3 headers
+VMXNET3_CINCLUDES-y += -I$(LIBUKBUS_PCI_BASE)/include
+
+# TODO Remove as soon as plat dependencies go away
+VMXNET3_CINCLUDES-y  += -I$(UK_PLAT_COMMON_BASE)/include
+
+VMXNET3_SRCS-y += $(VMXNET3_BASE)/vmxnet3_ethdev.c
+VMXNET3_SRCS-y += $(VMXNET3_BASE)/vmxnet3_rxtx.c
