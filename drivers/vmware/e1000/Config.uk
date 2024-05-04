@@ -6,6 +6,7 @@ config E1000
     select LIBUKSGLIST
     select LIBUKNETDEV
     select LIBUKNETDEV_DISPATCHERTHREADS
+    select LIBUKNETDEV_EINFO_LIBPARAM
     select LIBPOSIX_TIME
     select HAVE_INTCTLR
     help
