@@ -748,7 +748,7 @@ vmxnet3_dev_tx_queue_setup(struct uk_netdev *dev,
 	txq->a = hw->a;
 	txq->queue_id = queue_idx;
 	// txq->port_id = dev->data->port_id;
-	txq->shared = NULL; /* set in vmxnet3_setup_driver_shared() */
+	txq->shared = &hw->tqd_start[queue_idx];
 	txq->hw = hw;
 	txq->qid = queue_idx;
 	txq->stopped = TRUE;
@@ -867,7 +867,7 @@ vmxnet3_dev_rx_queue_setup(struct uk_netdev *dev,
 	rxq->queue_id = queue_idx;
 	// rxq->port_id = dev->data->port_id;
 	rxq->a = hw->a;
-	rxq->shared = NULL; /* set in vmxnet3_setup_driver_shared() */
+	rxq->shared = &hw->rqd_start[queue_idx];
 	rxq->hw = hw;
 	rxq->qid1 = queue_idx;
 	rxq->qid2 = queue_idx + hw->num_rx_queues;
