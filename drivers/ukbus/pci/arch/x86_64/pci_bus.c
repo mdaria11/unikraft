@@ -99,17 +99,17 @@ static inline int pci_driver_add_device(struct pci_driver *drv,
 	uk_pr_info("dev->base: 0x%08X\n", dev->base);
 
 	PCI_CONF_READ(__u32, &dev->bar0, config_addr, BAR0);
-	uk_pr_info("bar0: 0x%08X\n", dev->bar0);
+	uk_pr_info("dev->bar0: 0x%08X\n", dev->bar0);
 	PCI_CONF_READ(__u32, &dev->bar1, config_addr, BAR1);
-	uk_pr_info("bar1: 0x%08X\n", dev->bar1);
+	uk_pr_info("dev->bar1: 0x%08X\n", dev->bar1);
 	PCI_CONF_READ(__u32, &dev->bar2, config_addr, BAR2);
-	uk_pr_info("bar2: 0x%08X\n", dev->bar2);
+	uk_pr_info("dev->bar2: 0x%08X\n", dev->bar2);
 	PCI_CONF_READ(__u32, &dev->bar3, config_addr, BAR3);
-	uk_pr_info("bar3: 0x%08X\n", dev->bar3);
+	uk_pr_info("dev->bar3: 0x%08X\n", dev->bar3);
 	PCI_CONF_READ(__u32, &dev->bar4, config_addr, BAR4);
-	uk_pr_info("bar4: 0x%08X\n", dev->bar4);
+	uk_pr_info("dev->bar4: 0x%08X\n", dev->bar4);
 	PCI_CONF_READ(__u32, &dev->bar5, config_addr, BAR5);
-	uk_pr_info("bar5: 0x%08X\n", dev->bar5);
+	uk_pr_info("dev->bar5: 0x%08X\n", dev->bar5);
 
 	ret = drv->add_dev(dev);
 	if (ret < 0) {
