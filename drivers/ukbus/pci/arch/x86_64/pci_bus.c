@@ -96,6 +96,12 @@ static inline int pci_driver_add_device(struct pci_driver *drv,
 			| (addr->devid << PCI_DEVICE_SHIFT);
 	PCI_CONF_READ(__u16, &dev->base, config_addr, IOBAR);
 	PCI_CONF_READ(__u8, &dev->irq, config_addr, IRQ);
+	PCI_CONF_READ(__u32, &dev->bar0, config_addr, BAR0);
+	PCI_CONF_READ(__u32, &dev->bar1, config_addr, BAR1);
+	PCI_CONF_READ(__u32, &dev->bar2, config_addr, BAR2);
+	PCI_CONF_READ(__u32, &dev->bar3, config_addr, BAR3);
+	PCI_CONF_READ(__u32, &dev->bar4, config_addr, BAR4);
+	PCI_CONF_READ(__u32, &dev->bar5, config_addr, BAR5);
 
 	ret = drv->add_dev(dev);
 	if (ret < 0) {
