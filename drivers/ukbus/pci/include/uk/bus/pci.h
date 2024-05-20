@@ -234,7 +234,7 @@ static struct pci_bus_handler ph __unused;
 #define PCI_CONF_SECONDARY_BUS_MASK     (0xFF)
 
 #define PCI_HEADER_TYPE_MSB_MASK   (0x80)
-#define PCI_CONF_HEADER_TYPE       (0x00)
+#define PCI_CONF_HEADER_TYPE       (0x0C)
 #define PCI_CONF_HEADER_TYPE_SHFT  (16)
 #define PCI_CONF_HEADER_TYPE_MASK  (0xFF)
 
