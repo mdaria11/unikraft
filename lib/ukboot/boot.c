@@ -34,6 +34,7 @@
  */
 
 #include <uk/config.h>
+#include <uk/plat/config.h>
 
 #include <stddef.h>
 #include <stdio.h>
@@ -64,6 +65,13 @@
 #include <uk/tinyalloc.h>
 #define uk_alloc_init uk_tinyalloc_init
 #endif
+#if CONFIG_LIBUKBOOT_ALLOCSTACK
+#include <uk/allocstack.h>
+#if CONFIG_LIBUKBOOT_ALLOCSTACK_PREMAP_ORDER
+#define ALLOCSTACK_INITIAL_SIZE				\
+	(PAGE_SIZE * (1 << CONFIG_LIBUKBOOT_ALLOCSTACK_PREMAP_ORDER))
+#endif /* CONFIG_LIBUKBOOT_ALLOCSTACK_PREMAP_ORDER */
+#endif /* CONFIG_LIBUKBOOT_ALLOCSTACK */
 #if CONFIG_LIBUKSCHED
 #include <uk/sched.h>
 #endif /* CONFIG_LIBUKSCHED */
@@ -86,7 +94,6 @@
 #ifdef CONFIG_LIBUKSP
 #include <uk/sp.h>
 #endif
-#include <uk/arch/paging.h>
 #include <uk/arch/tls.h>
 #include <uk/plat/tls.h>
 #if CONFIG_LIBUKBOOT_MAINTHREAD
@@ -95,9 +102,9 @@
 #include <uk/errptr.h>
 #include "banner.h"
 
-#if CONFIG_LIBUKBOOT_NOSCHED
+#if !CONFIG_LIBUKBOOT_INITSCHED
 #include <uk/plat/common/lcpu.h>
-#endif /* CONFIG_LIBUKBOOT_NOSCHED */
+#endif /* !CONFIG_LIBUKBOOT_INITSCHED */
 
 #if CONFIG_LIBUKINTCTLR
 #include <uk/intctlr.h>
@@ -205,10 +212,7 @@ static struct uk_alloc *heap_init()
 	 * add every subsequent region to it.
 	 */
 	ukplat_memregion_foreach(&md, UKPLAT_MEMRT_FREE, 0, 0) {
-		UK_ASSERT(md->vbase == md->pbase);
-		UK_ASSERT(!(md->pbase & ~PAGE_MASK));
-		UK_ASSERT(md->len);
-		UK_ASSERT(!(md->len & ~PAGE_MASK));
+		UK_ASSERT_VALID_FREE_MRD(md);
 
 		uk_pr_debug("Trying %p-%p 0x%02x %s\n",
 			    (void *)md->vbase, (void *)(md->vbase + md->len),
@@ -260,9 +264,9 @@ void ukplat_entry(int argc, char *argv[])
 	struct uk_term_ctx tctx = { .target = UKPLAT_CRASH };
 	int rc = 0;
 #if CONFIG_LIBUKALLOC
-	struct uk_alloc *a = NULL;
+	struct uk_alloc *a = NULL, *sa = NULL, *auxsa = NULL;
 #endif
-#if !CONFIG_LIBUKBOOT_NOALLOC
+#if CONFIG_LIBUKBOOT_INITALLOC
 	void *tls = NULL;
 #endif
 #if CONFIG_LIBUKSCHED
@@ -316,7 +320,7 @@ void ukplat_entry(int argc, char *argv[])
 	}
 #endif /* CONFIG_LIBUKLIBPARAM */
 
-#if !CONFIG_LIBUKBOOT_NOALLOC
+#if CONFIG_LIBUKBOOT_INITALLOC
 	uk_pr_info("Initialize memory allocator...\n");
 
 	a = heap_init();
@@ -327,6 +331,25 @@ void ukplat_entry(int argc, char *argv[])
 		if (unlikely(rc != 0))
 			UK_CRASH("Could not set the platform memory allocator\n");
 	}
+
+	sa = uk_allocstack_init(a
+#if CONFIG_LIBUKVMEM
+				, &kernel_vas, ALLOCSTACK_INITIAL_SIZE
+#endif /* CONFIG_LIBUKVMEM */
+			       );
+	if (unlikely(!sa))
+		UK_CRASH("Could not initialize stack allocator\n");
+
+	auxsa = uk_allocstack_init(a
+#if CONFIG_LIBUKVMEM
+				    /* The auxiliary stack must be always
+				     * fully mapped.
+				     */
+				    , &kernel_vas, AUXSTACK_SIZE
+#endif /* CONFIG_LIBUKVMEM */
+				   );
+	if (unlikely(!auxsa))
+		UK_CRASH("Could not initialize auxiliary stack allocator\n");
 
 	/* Allocate a TLS for this execution context */
 	tls = uk_memalign(a,
@@ -341,24 +364,13 @@ void ukplat_entry(int argc, char *argv[])
 	ukplat_tlsp_set(ukarch_tls_tlsp(tls));
 
 	/* Allocate auxiliary stack for this execution context */
-	auxstack = uk_memalign(uk_alloc_get_default(),
-			       UKPLAT_AUXSP_ALIGN, UKPLAT_AUXSP_LEN);
+	auxstack = uk_memalign(auxsa,
+			       UKARCH_AUXSP_ALIGN, AUXSTACK_SIZE);
 	if (unlikely(!auxstack))
 		UK_CRASH("Failed to allocate the auxiliary stack\n");
 	/* Activate auxiliary stack */
-	ukplat_lcpu_set_auxsp(ukarch_gen_sp(auxstack, UKPLAT_AUXSP_LEN));
-#if CONFIG_LIBUKVMEM
-	rc = uk_vma_advise(uk_vas_get_active(),
-			   PAGE_ALIGN_DOWN((__vaddr_t)auxstack),
-			   PAGE_ALIGN_UP((__vaddr_t)auxstack +
-				  UKPLAT_AUXSP_LEN -
-				  PAGE_ALIGN_DOWN((__vaddr_t)auxstack)),
-			   UK_VMA_ADV_WILLNEED,
-			   UK_VMA_FLAG_UNINITIALIZED);
-	if (unlikely(rc))
-		UK_CRASH("Could not setup physical memory\n");
-#endif /* CONFIG_LIBUKVMEM */
-#endif /* !CONFIG_LIBUKBOOT_NOALLOC */
+	ukplat_lcpu_set_auxsp(ukarch_gen_sp(auxstack, AUXSTACK_SIZE));
+#endif /* CONFIG_LIBUKBOOT_INITALLOC */
 
 #if CONFIG_LIBUKINTCTLR
 	uk_pr_info("Initialize the IRQ subsystem...\n");
@@ -371,15 +383,15 @@ void ukplat_entry(int argc, char *argv[])
 	uk_pr_info("Initialize platform time...\n");
 	ukplat_time_init();
 
-#if !CONFIG_LIBUKBOOT_NOSCHED
+#if CONFIG_LIBUKBOOT_INITSCHED
 	uk_pr_info("Initialize scheduling...\n");
 #if CONFIG_LIBUKBOOT_INITSCHEDCOOP
-	s = uk_schedcoop_create(a);
+	s = uk_schedcoop_create(a, sa, auxsa, a);
 #endif
 	if (unlikely(!s))
 		UK_CRASH("Failed to initialize scheduling\n");
 	uk_sched_start(s);
-#endif /* !CONFIG_LIBUKBOOT_NOSCHED */
+#endif /* CONFIG_LIBUKBOOT_INITSCHED */
 
 	ictx.cmdline.argc = argc;
 	ictx.cmdline.argv = argv;

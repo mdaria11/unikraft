@@ -104,6 +104,26 @@ struct uk_file_state {
 	/* TODO */
 };
 
+static inline void uk_file_state_rlock(struct uk_file_state *st)
+{
+	uk_rwlock_rlock(&st->iolock);
+}
+
+static inline void uk_file_state_runlock(struct uk_file_state *st)
+{
+	uk_rwlock_runlock(&st->iolock);
+}
+
+static inline void uk_file_state_wlock(struct uk_file_state *st)
+{
+	uk_rwlock_wlock(&st->iolock);
+}
+
+static inline void uk_file_state_wunlock(struct uk_file_state *st)
+{
+	uk_rwlock_wunlock(&st->iolock);
+}
+
 /*
  * We define initializers separate from an initial values.
  * The former can only be used in (static) variable initializations, while the
@@ -116,6 +136,26 @@ struct uk_file_state {
 #define UK_FILE_STATE_INIT_VALUE(name) \
 	((struct uk_file_state)UK_FILE_STATE_INITIALIZER(name))
 
+
+static inline
+uk_pollevent uk_file_state_event_clear(struct uk_file_state *st,
+				       uk_pollevent ev)
+{
+	return uk_pollq_clear(&st->pollq, ev);
+}
+
+static inline
+uk_pollevent uk_file_state_event_set(struct uk_file_state *st, uk_pollevent ev)
+{
+	return uk_pollq_set(&st->pollq, ev);
+}
+
+static inline
+uk_pollevent uk_file_state_event_assign(struct uk_file_state *st,
+					uk_pollevent ev)
+{
+	return uk_pollq_assign(&st->pollq, ev);
+}
 
 /*
  * Reference count type used by uk_file.
@@ -218,22 +258,22 @@ void uk_file_release_weak(const struct uk_file *f)
 
 static inline void uk_file_rlock(const struct uk_file *f)
 {
-	uk_rwlock_rlock(&f->state->iolock);
+	uk_file_state_rlock(f->state);
 }
 
 static inline void uk_file_runlock(const struct uk_file *f)
 {
-	uk_rwlock_runlock(&f->state->iolock);
+	uk_file_state_runlock(f->state);
 }
 
 static inline void uk_file_wlock(const struct uk_file *f)
 {
-	uk_rwlock_wlock(&f->state->iolock);
+	uk_file_state_wlock(f->state);
 }
 
 static inline void uk_file_wunlock(const struct uk_file *f)
 {
-	uk_rwlock_wunlock(&f->state->iolock);
+	uk_file_state_wunlock(f->state);
 }
 
 /* Events & polling */
@@ -260,19 +300,19 @@ uk_pollevent uk_file_poll(const struct uk_file *f, uk_pollevent req)
 static inline
 uk_pollevent uk_file_event_clear(const struct uk_file *f, uk_pollevent clr)
 {
-	return uk_pollq_clear(&f->state->pollq, clr);
+	return uk_file_state_event_clear(f->state, clr);
 }
 
 static inline
 uk_pollevent uk_file_event_set(const struct uk_file *f, uk_pollevent set)
 {
-	return uk_pollq_set(&f->state->pollq, set);
+	return uk_file_state_event_set(f->state, set);
 }
 
 static inline
 uk_pollevent uk_file_event_assign(const struct uk_file *f, uk_pollevent set)
 {
-	return uk_pollq_assign(&f->state->pollq, set);
+	return uk_file_state_event_assign(f->state, set);
 }
 
 #endif /* __UKFILE_FILE_H__ */
