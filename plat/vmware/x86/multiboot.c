@@ -56,17 +56,6 @@ void multiboot_entry(struct lcpu *lcpu, struct multiboot_info *mi)
 	if (unlikely(!bi))
 		multiboot_crash("Incompatible or corrupted bootinfo", -EINVAL);
 
-	/* We have to call this here as the very early do_uk_reloc32 relocator
-	 * does not also relocate the UKPLAT_MEMRT_KERNEL mrd's like its C
-	 * equivalent, do_uk_reloc, does.
-	 */
-	do_uk_reloc_kmrds(0, 0);
-
-	/* Ensure that the memory map contains the legacy high mem area */
-	rc = ukplat_memregion_list_insert_legacy_hi_mem(&bi->mrds);
-	if (unlikely(rc))
-			multiboot_crash("Could not insert legacy memory region", rc);
-
 	/* Add the cmdline */
 	if (mi->flags & MULTIBOOT_INFO_CMDLINE) {
 		if (mi->cmdline) {
@@ -132,12 +121,8 @@ void multiboot_entry(struct lcpu *lcpu, struct multiboot_info *mi)
 	if (mi->flags & MULTIBOOT_INFO_MEM_MAP) {
 		for (offset = 0; offset < mi->mmap_length;
 		     offset += m->size + sizeof(m->size)) {
-			m = (void *)(__uptr)(mi->mmap_addr + offset);
+			m = (multiboot_memory_map_t *)(mi->mmap_addr + offset);
 
-			/* Ignore memory below the kernel image for now.
-			 * This is a workaround for the fact that the
-			 * VMware platform maps the memory slightly differently.
-			 */
 			start = MAX(m->addr, __END);
 			end   = m->addr + m->len;
 			if (unlikely(end <= start || end - start < PAGE_SIZE))
@@ -170,12 +155,6 @@ void multiboot_entry(struct lcpu *lcpu, struct multiboot_info *mi)
 			mrd_insert(bi, &mrd);
 		}
 	}
-
-	ukplat_memregion_list_coalesce(&bi->mrds);
-
-	rc = ukplat_memregion_alloc_sipi_vect();
-	if (unlikely(rc))
-		multiboot_crash("Could not insert SIPI vector region", rc);
 
 	_ukplat_entry(lcpu, bi);
 }

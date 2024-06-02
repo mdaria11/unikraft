@@ -17,6 +17,7 @@ usage()
 	echo "  -i                         Path to initrd cpio file (optional)"
 	echo "  -b                         Bootloader: grub (GRUB), ukefi (Unikraft EFI stub)"
 	echo "  -a                         Architecture: X64 (x86_64), AA64 (Aarch64)"
+	echo "  -p                         Platform: kvm, xen, vmware"
 	echo "  -d                         Path to Devicetree Blob (optional, for ukefi only!)"
 	echo "  -o                         Path to output file"
 	exit 1
@@ -27,6 +28,7 @@ OPTFORMAT="iso"
 OPTCMDLINE=""
 OPTOUTPUT=
 OPTARCH=
+OPTPLAT=
 OPTDTB=
 
 # cleanup
@@ -42,6 +44,10 @@ mkgrubiso()
 {
 	# configure grub
 	mkdir -p "${BUILDDIR}/boot/grub"
+
+	if [ "${OPTPLAT}" == "vmware" ]; then
+		GRUB_CFG_VMWARE_QUIRK="--quirk-modules-after-kernel"
+	fi
 
 	if [ -n "${OPTINITRD}" ]; then
 		GRUB_CFG_INITRD="module /boot/${OPTINITRDNAME}"
@@ -59,7 +65,7 @@ set default=0
 set timeout=0
 
 menuentry "${OPTKERNELNAME}" {
-	multiboot --quirk-modules-after-kernel /boot/${OPTKERNELNAME} /${OPTKERNELNAME} ${MBCMDL}
+	multiboot ${GRUB_CFG_VMWARE_QUIRK} /boot/${OPTKERNELNAME} /${OPTKERNELNAME} ${MBCMDL}
 	${GRUB_CFG_INITRD}
 	boot
 }
@@ -165,7 +171,7 @@ mkukefidisk()
 }
 
 # process options
-while getopts "hk:c:i:f:a:b:d:o:" OPT; do
+while getopts "hk:c:i:f:a:p:b:d:o:" OPT; do
 	case "${OPT}" in
 	h)
 		usage
@@ -187,6 +193,9 @@ while getopts "hk:c:i:f:a:b:d:o:" OPT; do
 		;;
 	a)
 		OPTARCH="${OPTARG}"
+		;;
+	p)
+		OPTPLAT="${OPTARG}"
 		;;
 	d)
 		OPTDTB="${OPTARG}"
@@ -220,6 +229,10 @@ if [ -n "${OPTINITRD}" ] && [ ! -f "${OPTINITRD}" ]; then
 fi
 if [ "${OPTARCH}" != "AA64" ] && [ "${OPTARCH}" != "X64" ]; then
 	echo "Invalid architecture" 1>&2
+	usage
+fi
+if [ "${OPTPLAT}" != "kvm" ] && [ "${OPTPLAT}" != "xen" ] && [ "${OPTPLAT}" != "vmware" ]; then
+	echo "Invalid platform" 1>&2
 	usage
 fi
 
