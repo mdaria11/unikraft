@@ -27,8 +27,6 @@ static void vmxnet3_tq_tx_complete(struct uk_netdev_tx_queue *);
 static void
 vmxnet3_tx_cmd_ring_release_mbufs(vmxnet3_cmd_ring_t *ring)
 {
-	uk_pr_err("vmxnet3_tx_cmd_ring_release_mbufs\n");
-
 	while (ring->next2comp != ring->next2fill) {
 		/* No need to worry about desc ownership, device is quiesced by now. */
 		vmxnet3_buf_info_t *buf_info = ring->buf_info + ring->next2comp;
@@ -48,8 +46,6 @@ vmxnet3_rx_cmd_ring_release_mbufs(vmxnet3_cmd_ring_t *ring)
 {
 	uint32_t i;
 
-	uk_pr_err("vmxnet3_rx_cmd_ring_release_mbufs\n");
-
 	for (i = 0; i < ring->size; i++) {
 		/* No need to worry about desc ownership, device is quiesced by now. */
 		vmxnet3_buf_info_t *buf_info = &ring->buf_info[i];
@@ -67,8 +63,6 @@ vmxnet3_rx_cmd_ring_release_mbufs(vmxnet3_cmd_ring_t *ring)
 static void
 vmxnet3_cmd_ring_release(vmxnet3_cmd_ring_t *ring)
 {
-	uk_pr_err("vmxnet3_cmd_ring_release\n");
-
 	uk_free(ring->a, ring->buf_info);
 	ring->buf_info = NULL;
 }
@@ -77,8 +71,6 @@ void
 vmxnet3_dev_tx_queue_release(struct uk_netdev *dev, uint16_t qid)
 {
 	struct uk_netdev_tx_queue *tq = dev->_tx_queue[qid];
-
-	uk_pr_err("vmxnet3_dev_tx_queue_release\n");
 
 	if (tq != NULL) {
 		/* Release mbufs */
@@ -97,8 +89,6 @@ vmxnet3_dev_rx_queue_release(struct uk_netdev *dev, uint16_t qid)
 {
 	int i;
 	struct uk_netdev_rx_queue *rq = dev->_rx_queue[qid];
-
-	uk_pr_err("vmxnet3_dev_rx_queue_release\n");
 
 	if (rq != NULL) {
 		/* Release mbufs */
@@ -125,8 +115,6 @@ vmxnet3_dev_tx_queue_reset(void *txq)
 	struct vmxnet3_comp_ring *comp_ring = &tq->comp_ring;
 	struct vmxnet3_data_ring *data_ring = &tq->data_ring;
 	int size;
-
-	debug_uk_pr_info("vmxnet3_dev_tx_queue_reset\n");
 
 	if (tq != NULL) {
 		/* Release the cmd_ring mbufs */
@@ -157,8 +145,6 @@ vmxnet3_dev_rx_queue_reset(void *rxq)
 	struct vmxnet3_comp_ring *comp_ring;
 	struct vmxnet3_rx_data_ring *data_ring = &rq->data_ring;
 	int size;
-
-	debug_uk_pr_info("vmxnet3_dev_rx_queue_reset\n");
 
 	/* Release both the cmd_rings mbufs */
 	for (i = 0; i < VMXNET3_RX_CMDRING_SIZE; i++)
@@ -192,8 +178,6 @@ vmxnet3_dev_clear_queues(struct uk_netdev *dev)
 	struct vmxnet3_hw *hw = to_vmxnet3dev(dev);
 	unsigned i;
 
-	debug_uk_pr_info("vmxnet3_dev_clear_queues\n");
-
 	for (i = 0; i < hw->num_tx_queues; i++) {
 		struct uk_netdev_tx_queue *txq = dev->_tx_queue[i];
 
@@ -218,8 +202,6 @@ vmxnet3_unmap_pkt(uint16_t eop_idx, struct uk_netdev_tx_queue *txq)
 {
 	int completed = 0;
 	struct uk_netbuf *mbuf;
-
-	debug_uk_pr_info("vmxnet3_unmap_pkt\n");
 
 	/* Release cmd_ring descriptor and free mbuf */
 	UK_ASSERT(txq->cmd_ring.base[eop_idx].txd.eop == 1);
@@ -252,8 +234,6 @@ vmxnet3_tq_tx_complete(struct uk_netdev_tx_queue *txq)
 	struct Vmxnet3_TxCompDesc *tcd = (struct Vmxnet3_TxCompDesc *)
 		(comp_ring->base + comp_ring->next2proc);
 
-	debug_uk_pr_info("vmxnet3_tq_tx_complete\n");
-
 	while (tcd->gen == comp_ring->gen) {
 		completed += vmxnet3_unmap_pkt(tcd->txdIdx, txq);
 
@@ -276,8 +256,6 @@ int vmxnet3_xmit_pkts(__unused struct uk_netdev *dev,
 	Vmxnet3_TxQueueCtrl *txq_ctrl = &txq->shared->ctrl;
 	uint32_t deferred = txq_ctrl->txNumDeferred;
 
-	uk_pr_err("vmxnet3_xmit_pkts\n");
-
 	if (unlikely(txq->stopped)) {
 		uk_pr_err("Tx queue is stopped.\n");
 		return 0;
@@ -295,10 +273,9 @@ int vmxnet3_xmit_pkts(__unused struct uk_netdev *dev,
 		struct uk_netbuf *m_seg = txm;
 		int copy_size = 0;
 		/* # of descriptors needed for a packet. */
-		unsigned count = 1; //txm->nb_segs;
+		unsigned count = 1;
 
 		avail = vmxnet3_cmd_ring_desc_avail(&txq->cmd_ring);
-		debug_uk_pr_info("vmxnet3_cmd_ring_desc_avail = %d\n", avail);
 		if (count > avail) {
 			/* Is command ring full? */
 			if (unlikely(avail == 0)) {
@@ -326,7 +303,6 @@ int vmxnet3_xmit_pkts(__unused struct uk_netdev *dev,
 
 		/* Skip empty packets */
 		if (unlikely(txm->len == 0)) {
-			debug_uk_pr_info("Empty packet\n");
 			uk_netbuf_free(txm);
 			nb_tx++;
 			continue;
@@ -335,12 +311,11 @@ int vmxnet3_xmit_pkts(__unused struct uk_netdev *dev,
 		debug_uk_pr_info("txm->len = %d, txq->txdata_desc_size = %d\n", txm->len, txq->txdata_desc_size);
 		if (txm->len <= txq->txdata_desc_size) {
 			struct Vmxnet3_TxDataDesc *tdd;
-
-			debug_uk_pr_info("copy size %d\n", copy_size);
 			tdd = (struct Vmxnet3_TxDataDesc *)
 				((uint8 *)txq->data_ring.base +
 				 txq->cmd_ring.next2fill *
 				 txq->txdata_desc_size);
+			
 			copy_size = txm->len;
 			memcpy(tdd->data, txm->buf, copy_size);
 		}
@@ -360,7 +335,6 @@ int vmxnet3_xmit_pkts(__unused struct uk_netdev *dev,
 
 			/* Skip empty segments */
 			if (unlikely(m_seg->len == 0)) {
-				debug_uk_pr_info("Skipping empty segment");
 				continue;
 			}
 
@@ -373,7 +347,6 @@ int vmxnet3_xmit_pkts(__unused struct uk_netdev *dev,
 							 offset;
 			} else {
 				gdesc->txd.addr = (uint64) m_seg->buf;
-				// gdesc->txd.addr = rte_mbuf_data_iova(m_seg);
 				ret |= UK_NETDEV_STATUS_MORE;
 			}
 
@@ -395,7 +368,6 @@ int vmxnet3_xmit_pkts(__unused struct uk_netdev *dev,
 		/* Add VLAN tag if present */
 		gdesc = txq->cmd_ring.base + first2fill;
 
-
 		gdesc->txd.hlen = 0;
 		gdesc->txd.om = VMXNET3_OM_NONE;
 		gdesc->txd.msscof = 0;
@@ -409,15 +381,10 @@ int vmxnet3_xmit_pkts(__unused struct uk_netdev *dev,
 		nb_tx++;
 	}
 
-	debug_uk_pr_info("vmxnet3 txThreshold: %u\n", txq_ctrl->txThreshold);
-
-	// if (deferred >= txq_ctrl->txThreshold) {
-		debug_uk_pr_info("deferred (%u) >= txq_ctrl->txThreshold (%u)\n", deferred, txq_ctrl->txThreshold);
-		txq_ctrl->txNumDeferred = 0;
-		/* Notify vSwitch that packets are available. */
-		VMXNET3_WRITE_BAR0_REG(hw, (VMXNET3_REG_TXPROD + txq->queue_id * VMXNET3_REG_ALIGN),
-				       txq->cmd_ring.next2fill);
-	// }
+	txq_ctrl->txNumDeferred = 0;
+	/* Notify vSwitch that packets are available. */
+	VMXNET3_WRITE_BAR0_REG(hw, (VMXNET3_REG_TXPROD + txq->queue_id * VMXNET3_REG_ALIGN),
+					txq->cmd_ring.next2fill);
 
 	ret |= UK_NETDEV_STATUS_SUCCESS;
 	return ret;
@@ -432,8 +399,6 @@ vmxnet3_renew_desc(struct uk_netdev_rx_queue *rxq, uint8_t ring_id,
 	struct Vmxnet3_RxDesc *rxd =
 		(struct Vmxnet3_RxDesc *)(ring->base + ring->next2fill);
 	vmxnet3_buf_info_t *buf_info = &ring->buf_info[ring->next2fill];
-
-	debug_uk_pr_info("vmxnet3_renew_desc\n");
 
 	if (ring_id == 0) {
 		/* Usually: One HEAD type buf per packet
@@ -453,10 +418,8 @@ vmxnet3_renew_desc(struct uk_netdev_rx_queue *rxq, uint8_t ring_id,
 	 * buf_info structure is equivalent to cookie for virtio-virtqueue
 	 */
 	buf_info->m = mbuf;
-	// buf_info->len = (uint16_t)(mbuf->buf_len - RTE_PKTMBUF_HEADROOM);
 	buf_info->len = (uint16_t)(mbuf->buflen);
 	buf_info->bufPA = (uint64) mbuf->buf;
-	// buf_info->bufPA = rte_mbuf_data_iova_default(mbuf);
 
 	/* Load Rx Descriptor with the buffer's GPA */
 	rxd->addr = buf_info->bufPA;
@@ -486,8 +449,6 @@ vmxnet3_post_rx_bufs(struct uk_netdev_rx_queue *rxq, uint8_t ring_id)
 	uint32_t i = 0;
 	struct vmxnet3_cmd_ring *ring = &rxq->cmd_ring[ring_id];
 
-	debug_uk_pr_info("vmxnet3_post_rx_bufs\n");
-
 	while (vmxnet3_cmd_ring_desc_avail(ring) > 0) {
 		/* Allocate blank mbuf for the current Rx Descriptor */
 		struct uk_netbuf *_pkt = NULL;
@@ -506,7 +467,7 @@ vmxnet3_post_rx_bufs(struct uk_netdev_rx_queue *rxq, uint8_t ring_id)
 
 	/* Return error only if no buffers are posted at present */
 	if (vmxnet3_cmd_ring_desc_avail(ring) >= (ring->size - 1)) {
-		uk_pr_err("Returning err!\n");
+		uk_pr_err("No buffers posted\n");
 		return -err;
 	}
 	else {
@@ -533,8 +494,6 @@ vmxnet3_recv_pkts(struct uk_netdev *dev __unused,
 	struct vmxnet3_hw *hw;
 	int ret_status = 0;
 
-	debug_uk_pr_info("vmxnet3_recv_pkts\n");
-
 	ring_idx = 0;
 	idx = 0;
 
@@ -548,7 +507,6 @@ vmxnet3_recv_pkts(struct uk_netdev *dev __unused,
 		return 0;
 	}
 
-	debug_uk_pr_info("initial rcd->gen %d, rxq->comp_ring.gen = %d\n", rcd->gen, rxq->comp_ring.gen);
 	if (rcd->gen == rxq->comp_ring.gen) {
 		struct uk_netbuf *newm = NULL;
 		int rc = 0;
@@ -559,15 +517,12 @@ vmxnet3_recv_pkts(struct uk_netdev *dev __unused,
 		if (unlikely(rc == 0)) {
 			uk_pr_err("Error allocating mbuf\n");
 			return UK_NETDEV_STATUS_MORE;
-			// break;
 		}
 
 		idx = rcd->rxdIdx;
 		ring_idx = vmxnet3_get_ring_idx(hw, rcd->rqID);
 		rxd = rxq->cmd_ring[ring_idx].base + idx;
 		rbi = rxq->cmd_ring[ring_idx].buf_info + idx;
-
-		debug_uk_pr_info("rxd idx: %d ring idx: %d.\n", idx, ring_idx);
 
 		UK_ASSERT(rcd->len <= rxd->len);
 		UK_ASSERT(rbi->m);
@@ -620,10 +575,8 @@ vmxnet3_recv_pkts(struct uk_netdev *dev __unused,
 			* the last mbuf of the current packet.
 			*/
 		if (rcd->sop) {
-			debug_uk_pr_info("rcd->sop set\n");
 			UK_ASSERT(rxd->btype == VMXNET3_RXD_BTYPE_HEAD);
 
-			debug_uk_pr_info("rcd->len = %d\n", rcd->len);
 			if (unlikely(rcd->len == 0)) {
 				UK_ASSERT(rcd->eop);
 
@@ -633,9 +586,7 @@ vmxnet3_recv_pkts(struct uk_netdev *dev __unused,
 				goto rcd_done;
 			}
 
-			debug_uk_pr_info("hw->num_rx_queues = %d, rcd->rqID = %d\n", hw->num_rx_queues, rcd->rqID);
 			if (vmxnet3_rx_data_ring(hw, rcd->rqID)) {
-				debug_uk_pr_info("copying\n");
 				uint8_t *rdd = rxq->data_ring.base +
 					idx * rxq->data_desc_size;
 
@@ -647,39 +598,19 @@ vmxnet3_recv_pkts(struct uk_netdev *dev __unused,
 			rxq->last_seg = rxm;
 		} else {
 			struct uk_netbuf *start = rxq->start_seg;
-
-			debug_uk_pr_info("rcd->sop not set\n");
 			UK_ASSERT(rxd->btype == VMXNET3_RXD_BTYPE_BODY);
 
 			if (likely(start && rxm->len > 0)) {
-				debug_uk_pr_info("not empty\n");
-				// start->pkt_len += rxm->data_len;
-				// start->nb_segs++;
-
 				rxq->last_seg->next = rxm;
 				rxq->last_seg = rxm;
 			} else {
 				uk_pr_err("Error received empty or out of order frame.\n");
-
 				uk_netbuf_free(rxm);
 			}
 		}
 
 		if (rcd->eop) {
-			// struct uk_netbuf *start = rxq->start_seg;
-
-			debug_uk_pr_info("rcd->eop set\n");
 			*pkt = rxq->start_seg;
-			// rx_pkts[nb_rx++] = start;
-
-			// debug_uk_pr_info("Buff->next: %p\n", (*pkt)->next);
-			// debug_uk_pr_info("Buff->prev: %p\n", (*pkt)->prev);
-			// debug_uk_pr_info("Buff->flags: %d\n", (*pkt)->flags);
-			// debug_uk_pr_info("Buff->data: %p\n", (*pkt)->data);
-			// debug_uk_pr_info("Buff->len: %d\n", (*pkt)->len);
-			// debug_uk_pr_info("Buff->priv: %p\n", (*pkt)->priv);
-			// debug_uk_pr_info("Buff->buf: %p\n", (*pkt)->buf);
-			// debug_uk_pr_info("Buff->buflen: %lu\n", (*pkt)->buflen);
 		}
 rcd_done:
 		rxq->cmd_ring[ring_idx].next2comp = idx;
@@ -689,7 +620,6 @@ rcd_done:
 		/* It's time to renew descriptors */
 		vmxnet3_renew_desc(rxq, ring_idx, newm);
 		if (unlikely(rxq->shared->ctrl.updateRxProd)) {
-			debug_uk_pr_info("Unlikely rxq->shared->ctrl.updateRxProd\n");
 			VMXNET3_WRITE_BAR0_REG(hw, rxprod_reg[ring_idx] + (rxq->queue_id * VMXNET3_REG_ALIGN),
 							rxq->cmd_ring[ring_idx].next2fill);
 		}
@@ -699,18 +629,15 @@ rcd_done:
 
 		rcd = &rxq->comp_ring.base[rxq->comp_ring.next2proc].rcd;
 	} else {
-		debug_uk_pr_info("nb_rxd = 0\n");
 		uint32_t avail;
 		for (ring_idx = 0; ring_idx < VMXNET3_RX_CMDRING_SIZE; ring_idx++) {
 			avail = vmxnet3_cmd_ring_desc_avail(&rxq->cmd_ring[ring_idx]);
 			if (unlikely(avail > 0)) {
-				uk_pr_info("Unlikely avail %d > 0\n", avail);
 				/* try to alloc new buf and renew descriptors */
 				vmxnet3_post_rx_bufs(rxq, ring_idx);
 			}
 		}
 		if (unlikely(rxq->shared->ctrl.updateRxProd)) {
-			debug_uk_pr_info("Unlikely rxq->shared->ctrl.updateRxProd\n");
 			for (ring_idx = 0; ring_idx < VMXNET3_RX_CMDRING_SIZE; ring_idx++) {
 				VMXNET3_WRITE_BAR0_REG(hw, rxprod_reg[ring_idx] + (rxq->queue_id * VMXNET3_REG_ALIGN),
 						       rxq->cmd_ring[ring_idx].next2fill);
@@ -729,25 +656,20 @@ vmxnet3_dev_tx_queue_setup(struct uk_netdev *dev,
 			   struct uk_netdev_txqueue_conf *tx_conf __unused)
 {
 	struct vmxnet3_hw *hw = to_vmxnet3dev(dev);
-	// const struct void *mz;
 	struct uk_netdev_tx_queue *txq;
 	struct vmxnet3_cmd_ring *ring;
 	struct vmxnet3_comp_ring *comp_ring;
 	struct vmxnet3_data_ring *data_ring;
 	int size;
 
-	uk_pr_err("vmxnet3_dev_tx_queue_setup\n");
-
 	txq = uk_calloc(hw->a, 1, sizeof(struct uk_netdev_tx_queue));
 	if (txq == NULL) {
 		uk_pr_err("Can not allocate tx queue structure\n");
 		return NULL;
-		// return -ENOMEM;
 	}
 
 	txq->a = hw->a;
 	txq->queue_id = queue_idx;
-	// txq->port_id = dev->data->port_id;
 	txq->shared = &hw->tqd_start[queue_idx];
 	txq->hw = hw;
 	txq->qid = queue_idx;
@@ -788,14 +710,6 @@ vmxnet3_dev_tx_queue_setup(struct uk_netdev *dev,
 	size += sizeof(struct Vmxnet3_TxCompDesc) * comp_ring->size;
 	size += txq->txdata_desc_size * data_ring->size;
 
-	// mz = rte_eth_dma_zone_reserve(dev, "txdesc", queue_idx, size,
-	// 			      VMXNET3_RING_BA_ALIGN, socket_id);
-	// if (mz == NULL) {
-	// 	// PMD_INIT_LOG(ERR, "ERROR: Creating queue descriptors zone");
-	// 	return -ENOMEM;
-	// }
-	// txq->mz = mz;
-	// memset(mz->addr, 0, mz->len);
 	txq->mz = uk_memalign(hw->a, VMXNET3_RING_BA_ALIGN, size);
 	if (txq->mz == NULL) {
 		uk_pr_err("ERROR: Creating queue descriptors zone\n");
@@ -803,28 +717,15 @@ vmxnet3_dev_tx_queue_setup(struct uk_netdev *dev,
 	}
 	memset(txq->mz, 0, size);
 
-	// ring->base = uk_memalign(hw->a, VMXNET3_RING_BA_ALIGN, sizeof(struct Vmxnet3_TxDesc) * ring->size);
 	ring->base = txq->mz;
 	ring->basePA = (uint64_t) ring->base;
 	/* cmd_ring initialization */
-	// ring->base = mz->addr;
-	// ring->basePA = mz->iova;
-
-	/* comp_ring initialization */
-	// comp_ring->base = uk_memalign(hw->a, VMXNET3_RING_BA_ALIGN, sizeof(struct Vmxnet3_TxCompDesc) * comp_ring->size);
-	// memset(comp_ring->base, 0, );
 	comp_ring->base = ring->base + ring->size;
 	comp_ring->basePA = (uint64_t)comp_ring->base;
-	// comp_ring->basePA = ring->basePA +
-	// 	(sizeof(struct Vmxnet3_TxDesc) * ring->size);
 
 	/* data_ring initialization */
-	// data_ring->base = uk_memalign(hw->a, VMXNET3_RING_BA_ALIGN, sizeof(struct Vmxnet3_TxDataDesc) * data_ring->size);
-	// memset(data_ring->base, 0, );
 	data_ring->base = (Vmxnet3_TxDataDesc *)(comp_ring->base + comp_ring->size);
 	data_ring->basePA = (uint64_t) data_ring->base;
-	// data_ring->basePA = comp_ring->basePA +
-	// 		(sizeof(struct Vmxnet3_TxCompDesc) * comp_ring->size);
 
 	/* cmd_ring0 buf_info allocation */
 	ring->buf_info = uk_calloc(hw->a, ring->size, sizeof(vmxnet3_buf_info_t));
@@ -855,17 +756,13 @@ vmxnet3_dev_rx_queue_setup(struct uk_netdev *dev,
 	uint8_t i;
 	char mem_name[32];
 
-	debug_uk_pr_info("vmxnet3_dev_rx_queue_setup\n");
-
 	rxq = uk_calloc(hw->a, 1, sizeof(struct uk_netdev_rx_queue));
 	if (rxq == NULL) {
 		uk_pr_err("Can not allocate rx queue structure\n");
 		return NULL;
 	}
 
-	// rxq->mp = mp;
 	rxq->queue_id = queue_idx;
-	// rxq->port_id = dev->data->port_id;
 	rxq->a = hw->a;
 	rxq->shared = &hw->rqd_start[queue_idx];
 	rxq->hw = hw;
@@ -888,11 +785,9 @@ vmxnet3_dev_rx_queue_setup(struct uk_netdev *dev,
 	nb_desc = VMXNET3_RX_RING_MAX_SIZE;
 	if (nb_desc < VMXNET3_DEF_RX_RING_SIZE) {
 		uk_pr_err("VMXNET3 Rx Ring Size Min: 256\n");
-		// return -EINVAL;
 		return NULL;
 	} else if (nb_desc > VMXNET3_RX_RING_MAX_SIZE) {
 		uk_pr_err("VMXNET3 Rx Ring Size Max: 4096\n");
-		// return -EINVAL;
 		return NULL;
 	} else {
 		ring0->size = nb_desc;
@@ -918,21 +813,11 @@ vmxnet3_dev_rx_queue_setup(struct uk_netdev *dev,
 	if (VMXNET3_VERSION_GE_3(hw) && rxq->data_desc_size)
 		size += rxq->data_desc_size * data_ring->size;
 
-	// mz = rte_eth_dma_zone_reserve(dev, "rxdesc", queue_idx, size,
-	// 			      VMXNET3_RING_BA_ALIGN, socket_id);
-	// if (mz == NULL) {
-	// 	// PMD_INIT_LOG(ERR, "ERROR: Creating queue descriptors zone");
-	// 	return -ENOMEM;
-	// }
-	// rxq->mz = mz;
-	// memset(mz->addr, 0, mz->len);
-
 	/* cmd_ring0 initialization */
 	rxq->mz = uk_memalign(hw->a, VMXNET3_RING_BA_ALIGN, size);
 	if (rxq->mz == NULL) {
 		uk_pr_err("ERROR: Creating queue descriptors zone\n");
 		return NULL;
-		// return -ENOMEM;
 	}
 	memset(rxq->mz, 0, size);
 
@@ -940,24 +825,17 @@ vmxnet3_dev_rx_queue_setup(struct uk_netdev *dev,
 	ring0->basePA = (uint64_t) ring0->base;
 
 	/* cmd_ring1 initialization */
-	// ring1->base = uk_memalign(hw->a, VMXNET3_RING_BA_ALIGN, sizeof(struct Vmxnet3_RxDesc) * ring1->size);
-	// memset(ring1->base, 0, );
 	ring1->base = ring0->base + ring0->size;
 	ring1->basePA = (uint64_t) ring1->base;
-	// ring1->basePA = ring0->basePA + sizeof(struct Vmxnet3_RxDesc) * ring0->size;
 
 	/* comp_ring initialization */
-	// comp_ring->base = uk_memalign(hw->a, VMXNET3_RING_BA_ALIGN, sizeof(struct Vmxnet3_RxCompDesc) * comp_ring->size);
-	// memset(comp_ring->base, 0, );
 	comp_ring->base = ring1->base + ring1->size;
 	comp_ring->basePA = (uint64_t) comp_ring->base;
-	// comp_ring->basePA = ring1->basePA + sizeof(struct Vmxnet3_RxDesc) * ring1->size;
 
 	/* data_ring initialization */
 	if (VMXNET3_VERSION_GE_3(hw) && rxq->data_desc_size) {
 		data_ring->base =
 			(uint8_t *)((uint64_t) comp_ring->base + comp_ring->size);
-		// data_ring->basePA = (uint64_t) data_ring->base;
 		data_ring->basePA = comp_ring->basePA +
 			sizeof(struct Vmxnet3_RxCompDesc) * comp_ring->size;
 	}
@@ -971,7 +849,6 @@ vmxnet3_dev_rx_queue_setup(struct uk_netdev *dev,
 		if (ring->buf_info == NULL) {
 			uk_pr_err("ERROR: Creating rx_buf_info structure\n");
 			return NULL;
-			// return -ENOMEM;
 		}
 	}
 
@@ -996,8 +873,6 @@ vmxnet3_dev_rxtx_init(struct uk_netdev *dev)
 	int i, ret;
 	uint8_t j;
 
-	uk_pr_err("vmxnet3_dev_rxtx_init\n");
-
 	for (i = 0; i < hw->num_rx_queues; i++) {
 		struct uk_netdev_rx_queue *rxq = dev->_rx_queue[i];
 
@@ -1013,7 +888,6 @@ vmxnet3_dev_rxtx_init(struct uk_netdev *dev)
 			 * mbufs for coming packets.
 			 */
 			if (unlikely(rxq->shared->ctrl.updateRxProd)) {
-				debug_uk_pr_info("Unlikely rxq->shared->ctrl.updateRxProd\n");
 				VMXNET3_WRITE_BAR0_REG(hw, rxprod_reg[j] + (rxq->queue_id * VMXNET3_REG_ALIGN),
 						       rxq->cmd_ring[j].next2fill);
 			}

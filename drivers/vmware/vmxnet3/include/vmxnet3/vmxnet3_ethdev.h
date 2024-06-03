@@ -78,8 +78,6 @@ struct vmxnet3_hw {
 	struct uk_hwaddr hw_addr;
 
 	struct uk_alloc *a;
-	/* BAR2: MSI-X Regs */
-	/* BAR3: Port IO    */
 	void *back;
 
 	uint16_t device_id;
@@ -211,10 +209,6 @@ int vmxnet3_recv_pkts(struct uk_netdev *dev,
 	struct uk_netdev_rx_queue *rx_queue,
 	struct uk_netbuf **pkt
 );
-// uint16_t vmxnet3_recv_pkts(void *rx_queue, void **rx_pkts,
-// 			   uint16_t nb_pkts);
-// int vmxnet3_xmit_pkts(void *tx_queue, void **tx_pkts,
-// 			   uint16_t nb_pkts);
 int vmxnet3_xmit_pkts(__unused struct uk_netdev *dev,
 	struct uk_netdev_tx_queue *tx_queue,
 	struct uk_netbuf *pkt);

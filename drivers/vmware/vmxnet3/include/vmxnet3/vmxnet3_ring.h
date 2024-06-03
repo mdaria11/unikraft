@@ -47,8 +47,6 @@ typedef struct vmxnet3_cmd_ring {
 static inline void
 vmxnet3_cmd_ring_adv_next2fill(struct vmxnet3_cmd_ring *ring)
 {
-	// uk_pr_info("vmxnet3_cmd_ring_adv_next2fill\n");
-
 	ring->next2fill++;
 	if (unlikely(ring->next2fill == ring->size)) {
 		ring->next2fill = 0;
@@ -65,8 +63,6 @@ vmxnet3_cmd_ring_adv_next2comp(struct vmxnet3_cmd_ring *ring)
 static inline uint32_t
 vmxnet3_cmd_ring_desc_avail(struct vmxnet3_cmd_ring *ring)
 {
-	// uk_pr_info("vmxnet3_cmd_ring_desc_avail\n");
-
 	return (ring->next2comp > ring->next2fill ? 0 : ring->size) +
 		   ring->next2comp - ring->next2fill - 1;
 }
@@ -138,10 +134,10 @@ struct vmxnet3_rxq_stats {
 };
 
 struct vmxnet3_rx_data_ring {
-	struct uk_alloc             *a;
-	uint8_t  *base;
-	uint64_t basePA;
-	uint32_t size;
+	struct uk_alloc              *a;
+	uint8_t                      *base;
+	uint64_t                     basePA;
+	uint32_t                     size;
 };
 
 typedef struct uk_netdev_rx_queue {
