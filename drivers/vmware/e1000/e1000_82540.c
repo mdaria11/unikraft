@@ -631,7 +631,7 @@ __s32 e1000_read_mac_addr_82540(struct e1000_hw *hw)
 
 	for (i = 0; i < ETH_ADDR_LEN; i++) {
 		hw->mac.addr[i] = hw->mac.perm_addr[i];
-		uk_pr_crit("addr[%d] = %X\n", i, hw->mac.addr[i]);
+		uk_pr_info("addr[%d] = %X\n", i, hw->mac.addr[i]);
 	}
 
 out:
