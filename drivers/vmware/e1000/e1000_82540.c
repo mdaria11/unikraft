@@ -67,8 +67,6 @@ static __s32 e1000_init_phy_params_82540(struct e1000_hw *hw)
 	struct e1000_phy_info *phy = &hw->phy;
 	__s32 ret_val;
 
-	debug_uk_pr_info("e1000_init_phy_params_82540\n");
-
 	phy->addr		= 1;
 	phy->autoneg_mask	= AUTONEG_ADVERTISE_SPEED_DEFAULT;
 	phy->reset_delay_us	= 10000;
@@ -95,11 +93,9 @@ static __s32 e1000_init_phy_params_82540(struct e1000_hw *hw)
 
 	/* Verify phy id */
 	if (phy->id == M88E1011_I_PHY_ID) {
-		uk_pr_info("phy->id == M88E1011_I_PHY_ID, ret_val = %d\n", ret_val);
 		return ret_val;
 	}
 	
-	debug_uk_pr_info("e1000_init_phy_params_82540 returning -E1000_ERR_PHY\n");
 	return -E1000_ERR_PHY;
 }
 
@@ -112,7 +108,6 @@ static __s32 e1000_init_nvm_params_82540(struct e1000_hw *hw)
 	struct e1000_nvm_info *nvm = &hw->nvm;
 	__u32 eecd;
 	
-	debug_uk_pr_info("e1000_init_nvm_params_82540\n");
 	eecd = E1000_READ_REG(hw, E1000_EECD);
 
 	nvm->type = e1000_nvm_eeprom_microwire;
@@ -154,8 +149,6 @@ static __s32 e1000_init_mac_params_82540(struct e1000_hw *hw)
 	struct e1000_mac_info *mac = &hw->mac;
 	__s32 ret_val = E1000_SUCCESS;
 
-	debug_uk_pr_info("e1000_init_mac_params_82540\n");
-
 	/* Set media type */
 	hw->phy.media_type = e1000_media_type_copper;
 
@@ -184,7 +177,6 @@ static __s32 e1000_init_mac_params_82540(struct e1000_hw *hw)
 	/* check for link */
 	switch (hw->phy.media_type) {
 	case e1000_media_type_copper:
-		// TODO: should be only this
 		mac->ops.check_for_link = e1000_check_for_copper_link_generic;
 		break;
 	case e1000_media_type_fiber:
@@ -194,11 +186,12 @@ static __s32 e1000_init_mac_params_82540(struct e1000_hw *hw)
 		mac->ops.check_for_link = e1000_check_for_serdes_link_generic;
 		break;
 	default:
-		uk_pr_crit("ERRORRRRRR!!!!!!\n");
+		uk_pr_crit("No valid link found.\n");
 		ret_val = -E1000_ERR_CONFIG;
 		goto out;
 		break;
 	}
+
 	/* link info */
 	mac->ops.get_link_up_info =
 		(hw->phy.media_type == e1000_media_type_copper)
@@ -232,8 +225,6 @@ out:
  **/
 void e1000_init_function_pointers_82540(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_init_function_pointers_82540\n");
-
 	hw->mac.ops.init_params = e1000_init_mac_params_82540;
 	hw->nvm.ops.init_params = e1000_init_nvm_params_82540;
 	hw->phy.ops.init_params = e1000_init_phy_params_82540;
@@ -249,8 +240,6 @@ static __s32 e1000_reset_hw_82540(struct e1000_hw *hw)
 {
 	__u32 ctrl, manc;
 	__s32 ret_val = E1000_SUCCESS;
-
-	debug_uk_pr_info("e1000_reset_hw_82540\n");
 
 	uk_pr_debug("Masking off all interrupts\n");
 	E1000_WRITE_REG(hw, E1000_IMC, 0xFFFFFFFF);
@@ -297,8 +286,6 @@ static __s32 e1000_init_hw_82540(struct e1000_hw *hw)
 	__u32 txdctl;
 	__s32 ret_val;
 	__u16 i;
-
-	debug_uk_pr_info("e1000_init_hw_82540\n");
 
 	/* Initialize identification LED */
 	ret_val = mac->ops.id_led_init(hw);
@@ -367,8 +354,6 @@ static __s32 e1000_setup_copper_link_82540(struct e1000_hw *hw)
 	__s32 ret_val;
 	__u16 data;
 
-	uk_pr_debug("e1000_setup_copper_link_82540\n");
-
 	ctrl = E1000_READ_REG(hw, E1000_CTRL);
 	ctrl |= E1000_CTRL_SLU;
 	ctrl &= ~(E1000_CTRL_FRCSPD | E1000_CTRL_FRCDPX);
@@ -413,8 +398,6 @@ static __s32 e1000_setup_fiber_serdes_link_82540(struct e1000_hw *hw)
 {
 	__s32 ret_val = E1000_SUCCESS;
 
-	uk_pr_debug("e1000_setup_fiber_serdes_link_82540\n");
-
 	if (hw->phy.media_type == e1000_media_type_internal_serdes) {
 		/*
 			* If we're on serdes media, adjust the output
@@ -447,8 +430,6 @@ static __s32 e1000_adjust_serdes_amplitude_82540(struct e1000_hw *hw)
 	__s32 ret_val;
 	__u16 nvm_data;
 
-	debug_uk_pr_info("e1000_adjust_serdes_amplitude_82540\n");
-
 	ret_val = hw->nvm.ops.read(hw, NVM_SERDES_AMPLITUDE, 1, &nvm_data);
 	if (ret_val)
 		goto out;
@@ -478,56 +459,45 @@ static __s32 e1000_set_vco_speed_82540(struct e1000_hw *hw)
 	__u16 default_page = 0;
 	__u16 phy_data;
 
-	debug_uk_pr_info("e1000_set_vco_speed_82540\n");
-
 	/* Set PHY register 30, page 5, bit 8 to 0 */
 
-	debug_uk_pr_info("e1000_set_vco_speed_82540 read_reg\n");
 	ret_val = hw->phy.ops.read_reg(hw, M88E1000_PHY_PAGE_SELECT,
 				       &default_page);
 	if (ret_val)
 		goto out;
 
-	debug_uk_pr_info("e1000_set_vco_speed_82540 write_reg\n");
 	ret_val = hw->phy.ops.write_reg(hw, M88E1000_PHY_PAGE_SELECT, 0x0005);
 	if (ret_val)
 		goto out;
 
-	debug_uk_pr_info("e1000_set_vco_speed_82540 read_reg\n");
 	ret_val = hw->phy.ops.read_reg(hw, M88E1000_PHY_GEN_CONTROL, &phy_data);
 	if (ret_val)
 		goto out;
 
 	phy_data &= ~M88E1000_PHY_VCO_REG_BIT8;
-	debug_uk_pr_info("e1000_set_vco_speed_82540 write_reg\n");
 	ret_val = hw->phy.ops.write_reg(hw, M88E1000_PHY_GEN_CONTROL, phy_data);
 	if (ret_val)
 		goto out;
 
 	/* Set PHY register 30, page 4, bit 11 to 1 */
 
-	debug_uk_pr_info("e1000_set_vco_speed_82540 write_reg\n");
 	ret_val = hw->phy.ops.write_reg(hw, M88E1000_PHY_PAGE_SELECT, 0x0004);
 	if (ret_val)
 		goto out;
 
-	debug_uk_pr_info("e1000_set_vco_speed_82540 read_reg\n");
 	ret_val = hw->phy.ops.read_reg(hw, M88E1000_PHY_GEN_CONTROL, &phy_data);
 	if (ret_val)
 		goto out;
 
 	phy_data |= M88E1000_PHY_VCO_REG_BIT11;
-	debug_uk_pr_info("e1000_set_vco_speed_82540 write_reg\n");
 	ret_val = hw->phy.ops.write_reg(hw, M88E1000_PHY_GEN_CONTROL, phy_data);
 	if (ret_val)
 		goto out;
 
-	debug_uk_pr_info("e1000_set_vco_speed_82540 write_reg\n");
 	ret_val = hw->phy.ops.write_reg(hw, M88E1000_PHY_PAGE_SELECT,
 					default_page);
 
 out:
-	debug_uk_pr_info("e1000_set_vco_speed_82540 out\n");
 	return ret_val;
 }
 
@@ -544,8 +514,6 @@ static __s32 e1000_set_phy_mode_82540(struct e1000_hw *hw)
 {
 	__s32 ret_val = E1000_SUCCESS;
 	__u16 nvm_data;
-
-	debug_uk_pr_info("e1000_set_phy_mode_82540\n");
 
 	if (hw->mac.type != e1000_82545_rev_3)
 		goto out;
@@ -585,8 +553,6 @@ out:
  **/
 static void e1000_power_down_phy_copper_82540(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_power_down_phy_copper_82540\n");
-
 	/* If the management interface is not enabled, then power down */
 	if (!(E1000_READ_REG(hw, E1000_MANC) & E1000_MANC_SMBUS_EN))
 		e1000_power_down_phy_copper(hw);
@@ -602,8 +568,6 @@ static void e1000_power_down_phy_copper_82540(struct e1000_hw *hw)
  **/
 static void e1000_clear_hw_cntrs_82540(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_clear_hw_cntrs_82540\n");
-
 	e1000_clear_hw_cntrs_base_generic(hw);
 
 	E1000_READ_REG(hw, E1000_PRC64);
@@ -649,8 +613,6 @@ __s32 e1000_read_mac_addr_82540(struct e1000_hw *hw)
 {
 	__s32  ret_val = E1000_SUCCESS;
 	__u16 offset, nvm_data, i;
-
-	debug_uk_pr_info("e1000_read_mac_addr_82540\n");
 
 	for (i = 0; i < ETH_ADDR_LEN; i += 2) {
 		offset = i >> 1;

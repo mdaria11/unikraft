@@ -40,9 +40,7 @@ POSSIBILITY OF SUCH DAMAGE.
 STATIC __s32 e1000_null_mbx_check_for_flag(struct e1000_hw __unused *hw,
 					 __u16 __unused mbx_id)
 {
-	uk_pr_info("e1000_null_mbx_check_flag\n");
 	UNREFERENCED_2PARAMETER(hw, mbx_id);
-
 	return E1000_SUCCESS;
 }
 
@@ -55,9 +53,7 @@ STATIC __s32 e1000_null_mbx_transact(struct e1000_hw __unused *hw,
 				   __u16 __unused size,
 				   __u16 __unused mbx_id)
 {
-	uk_pr_info("e1000_null_mbx_rw_msg\n");
 	UNREFERENCED_4PARAMETER(hw, msg, size, mbx_id);
-
 	return E1000_SUCCESS;
 }
 
@@ -74,8 +70,6 @@ __s32 e1000_read_mbx(struct e1000_hw *hw, __u32 *msg, __u16 size, __u16 mbx_id)
 {
 	struct e1000_mbx_info *mbx = &hw->mbx;
 	__s32 ret_val = -E1000_ERR_MBX;
-
-	uk_pr_info("e1000_read_mbx\n");
 
 	/* limit read to size of mailbox */
 	if (size > mbx->size)
@@ -101,8 +95,6 @@ __s32 e1000_write_mbx(struct e1000_hw *hw, __u32 *msg, __u16 size, __u16 mbx_id)
 	struct e1000_mbx_info *mbx = &hw->mbx;
 	__s32 ret_val = E1000_SUCCESS;
 
-	uk_pr_info("e1000_write_mbx\n");
-
 	if (size > mbx->size)
 		ret_val = -E1000_ERR_MBX;
 
@@ -124,8 +116,6 @@ __s32 e1000_check_for_msg(struct e1000_hw *hw, __u16 mbx_id)
 	struct e1000_mbx_info *mbx = &hw->mbx;
 	__s32 ret_val = -E1000_ERR_MBX;
 
-	uk_pr_info("e1000_check_for_msg\n");
-
 	if (mbx->ops.check_for_msg)
 		ret_val = mbx->ops.check_for_msg(hw, mbx_id);
 
@@ -143,8 +133,6 @@ __s32 e1000_check_for_ack(struct e1000_hw *hw, __u16 mbx_id)
 {
 	struct e1000_mbx_info *mbx = &hw->mbx;
 	__s32 ret_val = -E1000_ERR_MBX;
-
-	uk_pr_info("e1000_check_for_ack\n");
 
 	if (mbx->ops.check_for_ack)
 		ret_val = mbx->ops.check_for_ack(hw, mbx_id);
@@ -164,8 +152,6 @@ __s32 e1000_check_for_rst(struct e1000_hw *hw, __u16 mbx_id)
 	struct e1000_mbx_info *mbx = &hw->mbx;
 	__s32 ret_val = -E1000_ERR_MBX;
 
-	uk_pr_info("e1000_check_for_rst\n");
-
 	if (mbx->ops.check_for_rst)
 		ret_val = mbx->ops.check_for_rst(hw, mbx_id);
 
@@ -183,8 +169,6 @@ STATIC __s32 e1000_poll_for_msg(struct e1000_hw *hw, __u16 mbx_id)
 {
 	struct e1000_mbx_info *mbx = &hw->mbx;
 	int countdown = mbx->timeout;
-
-	uk_pr_info("e1000_poll_for_msg\n");
 
 	if (!countdown || !mbx->ops.check_for_msg)
 		goto out;
@@ -214,8 +198,6 @@ STATIC __s32 e1000_poll_for_ack(struct e1000_hw *hw, __u16 mbx_id)
 {
 	struct e1000_mbx_info *mbx = &hw->mbx;
 	int countdown = mbx->timeout;
-
-	uk_pr_info("e1000_poll_for_ack\n");
 
 	if (!countdown || !mbx->ops.check_for_ack)
 		goto out;
@@ -249,8 +231,6 @@ __s32 e1000_read_posted_mbx(struct e1000_hw *hw, __u32 *msg, __u16 size, __u16 m
 	struct e1000_mbx_info *mbx = &hw->mbx;
 	__s32 ret_val = -E1000_ERR_MBX;
 
-	uk_pr_info("e1000_read_posted_mbx\n");
-
 	if (!mbx->ops.read)
 		goto out;
 
@@ -277,8 +257,6 @@ __s32 e1000_write_posted_mbx(struct e1000_hw *hw, __u32 *msg, __u16 size, __u16 
 {
 	struct e1000_mbx_info *mbx = &hw->mbx;
 	__s32 ret_val = -E1000_ERR_MBX;
-
-	uk_pr_info("e1000_write_posted_mbx\n");
 
 	/* exit if either we can't write or there isn't a defined timeout */
 	if (!mbx->ops.write || !mbx->timeout)
@@ -323,10 +301,6 @@ void e1000_init_mbx_ops_generic(struct e1000_hw *hw)
 STATIC __u32 e1000_read_v2p_mailbox(struct e1000_hw *hw)
 {
 	__u32 v2p_mailbox = E1000_READ_REG(hw, E1000_V2PMAILBOX(0));
-
-	// v2p_mailbox |= hw->dev_spec.vf.v2p_mailbox;
-	// hw->dev_spec.vf.v2p_mailbox |= v2p_mailbox & E1000_V2PMAILBOX_R2C_BITS;
-
 	return v2p_mailbox;
 }
 
@@ -346,8 +320,6 @@ STATIC __s32 e1000_check_for_bit_vf(struct e1000_hw *hw, __u32 mask)
 	if (v2p_mailbox & mask)
 		ret_val = E1000_SUCCESS;
 
-	// hw->dev_spec.vf.v2p_mailbox &= ~mask;
-
 	return ret_val;
 }
 
@@ -364,7 +336,6 @@ STATIC __s32 e1000_check_for_msg_vf(struct e1000_hw *hw,
 	__s32 ret_val = -E1000_ERR_MBX;
 
 	UNREFERENCED_1PARAMETER(mbx_id);
-	uk_pr_info("e1000_check_for_msg_vf\n");
 
 	if (!e1000_check_for_bit_vf(hw, E1000_V2PMAILBOX_PFSTS)) {
 		ret_val = E1000_SUCCESS;
@@ -386,7 +357,6 @@ STATIC __s32 e1000_check_for_ack_vf(struct e1000_hw *hw,
 	__s32 ret_val = -E1000_ERR_MBX;
 
 	UNREFERENCED_1PARAMETER(mbx_id);
-	uk_pr_info("e1000_check_for_ack_vf\n");
 
 	if (!e1000_check_for_bit_vf(hw, E1000_V2PMAILBOX_PFACK)) {
 		ret_val = E1000_SUCCESS;
@@ -408,7 +378,6 @@ STATIC __s32 e1000_check_for_rst_vf(struct e1000_hw *hw,
 	__s32 ret_val = -E1000_ERR_MBX;
 
 	UNREFERENCED_1PARAMETER(mbx_id);
-	uk_pr_info("e1000_check_for_rst_vf\n");
 
 	if (!e1000_check_for_bit_vf(hw, (E1000_V2PMAILBOX_RSTD |
 					 E1000_V2PMAILBOX_RSTI))) {
@@ -428,8 +397,6 @@ STATIC __s32 e1000_obtain_mbx_lock_vf(struct e1000_hw *hw)
 {
 	__s32 ret_val = -E1000_ERR_MBX;
 	int count = 10;
-
-	uk_pr_info("e1000_obtain_mbx_lock_vf\n");
 
 	do {
 		/* Take ownership of the buffer */
@@ -462,8 +429,6 @@ STATIC __s32 e1000_write_mbx_vf(struct e1000_hw *hw, __u32 *msg, __u16 size,
 	__u16 i;
 
 	UNREFERENCED_1PARAMETER(mbx_id);
-
-	uk_pr_info("e1000_write_mbx_vf\n");
 
 	/* lock the mailbox to prevent pf/vf race condition */
 	ret_val = e1000_obtain_mbx_lock_vf(hw);
@@ -499,8 +464,7 @@ STATIC __s32 e1000_read_mbx_vf(struct e1000_hw *hw, __u32 *msg, __u16 size,
 {
 	__s32 ret_val = E1000_SUCCESS;
 	__u16 i;
-
-	uk_pr_info("e1000_read_mbx_vf\n");
+	
 	UNREFERENCED_1PARAMETER(mbx_id);
 
 	/* lock the mailbox to prevent pf/vf race condition */

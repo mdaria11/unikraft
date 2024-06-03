@@ -47,12 +47,12 @@ __s32 e1000_init_mac_params(struct e1000_hw *hw)
 	if (hw->mac.ops.init_params) {
 		ret_val = hw->mac.ops.init_params(hw);
 		if (ret_val) {
-			uk_pr_err("MAC Initialization Error\n");
+			uk_pr_err("MAC Initialization Error with code %d\n", ret_val);
 			goto out;
 		}
 	} else {
-		uk_pr_err("mac.init_mac_params was NULL\n");
 		ret_val = -E1000_ERR_CONFIG;
+		uk_pr_err("MAC Initialization Error with code %d\n", ret_val);
 	}
 
 out:
@@ -73,12 +73,12 @@ __s32 e1000_init_nvm_params(struct e1000_hw *hw)
 	if (hw->nvm.ops.init_params) {
 		ret_val = hw->nvm.ops.init_params(hw);
 		if (ret_val) {
-			uk_pr_err("NVM Initialization Error\n");
+			uk_pr_err("NVM Initialization Error with code %d\n", ret_val);
 			goto out;
 		}
 	} else {
-		uk_pr_err("nvm.init_nvm_params was NULL\n");
 		ret_val = -E1000_ERR_CONFIG;
+		uk_pr_err("NVM Initialization Error with code %d\n", ret_val);
 	}
 
 out:
@@ -96,17 +96,15 @@ __s32 e1000_init_phy_params(struct e1000_hw *hw)
 {
 	__s32 ret_val = E1000_SUCCESS;
 
-	debug_uk_pr_info("e1000_init_phy_params\n");
-
 	if (hw->phy.ops.init_params) {
 		ret_val = hw->phy.ops.init_params(hw);
 		if (ret_val) {
-			uk_pr_info("PHY Initialization Error\n");
+			uk_pr_err("PHY Initialization Error with code %d\n", ret_val);
 			goto out;
 		}
 	} else {
-		uk_pr_info("phy.init_phy_params was NULL\n");
 		ret_val =  -E1000_ERR_CONFIG;
+		uk_pr_err("PHY Initialization Error with code %d\n", ret_val);
 	}
 
 out:
@@ -124,17 +122,15 @@ __s32 e1000_init_mbx_params(struct e1000_hw *hw)
 {
 	__s32 ret_val = E1000_SUCCESS;
 
-	debug_uk_pr_info("e1000_init_mbx_params\n");
-
 	if (hw->mbx.ops.init_params) {
 		ret_val = hw->mbx.ops.init_params(hw);
 		if (ret_val) {
-			uk_pr_err("Mailbox Initialization Error\n");
+			uk_pr_err("Mailbox Initialization Error with code %d\n", ret_val);
 			goto out;
 		}
 	} else {
-		uk_pr_err("mbx.init_mbx_params was NULL\n");
 		ret_val =  -E1000_ERR_CONFIG;
+		uk_pr_err("Mailbox Initialization Error with code %d\n", ret_val);
 	}
 
 out:
@@ -154,8 +150,6 @@ __s32 e1000_set_mac_type(struct e1000_hw *hw)
 {
 	struct e1000_mac_info *mac = &hw->mac;
 	__s32 ret_val = E1000_SUCCESS;
-
-	debug_uk_pr_info("e1000_set_mac_type\n");
 
     mac->type = e1000_82545;
 
@@ -177,8 +171,6 @@ __s32 e1000_set_mac_type(struct e1000_hw *hw)
 __s32 e1000_setup_init_funcs(struct e1000_hw *hw, bool init_device)
 {
 	__s32 ret_val;
-
-	debug_uk_pr_info("e1000_setup_init_funcs\n");
 
 	/* Can't do much good without knowing the MAC type. */
 	ret_val = e1000_set_mac_type(hw);
@@ -207,7 +199,6 @@ __s32 e1000_setup_init_funcs(struct e1000_hw *hw, bool init_device)
 	 * adapter family file that sets up function pointers for the rest of
 	 * the functions in that family.
 	 */
-	uk_pr_info("calling e1000_init_function_pointers_82540\n");
     e1000_init_function_pointers_82540(hw);
 	ret_val = e1000_init_mac_params(hw);
 	ret_val = e1000_init_nvm_params(hw);
@@ -220,31 +211,26 @@ __s32 e1000_setup_init_funcs(struct e1000_hw *hw, bool init_device)
 	if (!(ret_val) && init_device) {
 		ret_val = e1000_init_mac_params(hw);
 		if (ret_val) {
-			uk_pr_info("e1000_init_mac_params: ret_val %d\n", ret_val);
 			goto out;
 		}
 
 		ret_val = e1000_init_nvm_params(hw);
 		if (ret_val) {
-			uk_pr_info("e1000_init_nvm_params: ret_val %d\n", ret_val);
 			goto out;
 		}
 
 		ret_val = e1000_init_phy_params(hw);
 		if (ret_val) {
-			uk_pr_info("e1000_init_phy_params: ret_val %d\n", ret_val);
 			goto out;
 		}
 
 		ret_val = e1000_init_mbx_params(hw);
 		if (ret_val) {
-			uk_pr_info("e1000_init_mbx_params: ret_val %d\n", ret_val);
 			goto out;
 		}
 	}
 
 out:
-	uk_pr_info("out: ret_val %d\n", ret_val);
 	return ret_val;
 }
 
@@ -258,7 +244,6 @@ out:
  **/
 __s32 e1000_get_bus_info(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_get_bus_info\n");
 	if (hw->mac.ops.get_bus_info) {
 		return hw->mac.ops.get_bus_info(hw);
 	}
@@ -279,7 +264,6 @@ __s32 e1000_get_bus_info(struct e1000_hw *hw)
 void e1000_update_mc_addr_list(struct e1000_hw *hw, __u8 *mc_addr_list,
 			       __u32 mc_addr_count)
 {
-	debug_uk_pr_info("e1000_update_mc_addr_list\n");
 	if (hw->mac.ops.update_mc_addr_list)
 		hw->mac.ops.update_mc_addr_list(hw, mc_addr_list,
 						mc_addr_count);
@@ -295,7 +279,6 @@ void e1000_update_mc_addr_list(struct e1000_hw *hw, __u8 *mc_addr_list,
  **/
 __s32 e1000_force_mac_fc(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_force_mac_fc\n");
 	return e1000_force_mac_fc_generic(hw);
 }
 
@@ -309,8 +292,6 @@ __s32 e1000_force_mac_fc(struct e1000_hw *hw)
  **/
 __s32 e1000_check_for_link(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_check_for_link\n");
-
 	if (hw->mac.ops.check_for_link)
 		return hw->mac.ops.check_for_link(hw);
 
@@ -326,7 +307,6 @@ __s32 e1000_check_for_link(struct e1000_hw *hw)
  **/
 bool e1000_check_mng_mode(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_check_mng_mode\n");
 	if (hw->mac.ops.check_mng_mode)
 		return hw->mac.ops.check_mng_mode(hw);
 
@@ -342,8 +322,6 @@ bool e1000_check_mng_mode(struct e1000_hw *hw)
  **/
 __s32 e1000_reset_hw(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_reset_hw\n");
-	
 	if (hw->mac.ops.reset_hw)
 		return hw->mac.ops.reset_hw(hw);
 
@@ -359,8 +337,6 @@ __s32 e1000_reset_hw(struct e1000_hw *hw)
  **/
 __s32 e1000_init_hw(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_init_hw\n");
-
 	if (hw->mac.ops.init_hw)
 		return hw->mac.ops.init_hw(hw);
 
@@ -377,8 +353,6 @@ __s32 e1000_init_hw(struct e1000_hw *hw)
  **/
 __s32 e1000_setup_link(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_setup_link\n");
-
 	if (hw->mac.ops.setup_link)
 		return hw->mac.ops.setup_link(hw);
 
@@ -397,8 +371,6 @@ __s32 e1000_setup_link(struct e1000_hw *hw)
  **/
 __s32 e1000_get_speed_and_duplex(struct e1000_hw *hw, __u16 *speed, __u16 *duplex)
 {
-	debug_uk_pr_info("e1000_get_speed_and_duplex\n");
-
 	if (hw->mac.ops.get_link_up_info)
 		return hw->mac.ops.get_link_up_info(hw, speed, duplex);
 
@@ -415,8 +387,6 @@ __s32 e1000_get_speed_and_duplex(struct e1000_hw *hw, __u16 *speed, __u16 *duple
  **/
 __s32 e1000_setup_led(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_setup_led\n");
-
 	if (hw->mac.ops.setup_led)
 		return hw->mac.ops.setup_led(hw);
 
@@ -432,8 +402,6 @@ __s32 e1000_setup_led(struct e1000_hw *hw)
  **/
 __s32 e1000_cleanup_led(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_cleanup_led\n");
-
 	if (hw->mac.ops.cleanup_led)
 		return hw->mac.ops.cleanup_led(hw);
 
@@ -450,8 +418,6 @@ __s32 e1000_cleanup_led(struct e1000_hw *hw)
  **/
 __s32 e1000_blink_led(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_blink_led\n");
-
 	if (hw->mac.ops.blink_led)
 		return hw->mac.ops.blink_led(hw);
 
@@ -467,8 +433,6 @@ __s32 e1000_blink_led(struct e1000_hw *hw)
  **/
 __s32 e1000_id_led_init(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_id_led_init\n");
-
 	if (hw->mac.ops.id_led_init)
 		return hw->mac.ops.id_led_init(hw);
 
@@ -484,8 +448,6 @@ __s32 e1000_id_led_init(struct e1000_hw *hw)
  **/
 __s32 e1000_led_on(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_led_on\n");
-
 	if (hw->mac.ops.led_on)
 		return hw->mac.ops.led_on(hw);
 
@@ -501,8 +463,6 @@ __s32 e1000_led_on(struct e1000_hw *hw)
  **/
 __s32 e1000_led_off(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_led_off\n");
-
 	if (hw->mac.ops.led_off)
 		return hw->mac.ops.led_off(hw);
 
@@ -518,7 +478,6 @@ __s32 e1000_led_off(struct e1000_hw *hw)
  **/
 void e1000_reset_adaptive(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_reset_adaptive\n");
 	e1000_reset_adaptive_generic(hw);
 }
 
@@ -531,7 +490,6 @@ void e1000_reset_adaptive(struct e1000_hw *hw)
  **/
 void e1000_update_adaptive(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_update_adaptive\n");
 	e1000_update_adaptive_generic(hw);
 }
 
@@ -545,7 +503,6 @@ void e1000_update_adaptive(struct e1000_hw *hw)
  **/
 __s32 e1000_disable_pcie_master(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_disable_pcie_master\n");
 	return e1000_disable_pcie_master_generic(hw);
 }
 
@@ -558,7 +515,6 @@ __s32 e1000_disable_pcie_master(struct e1000_hw *hw)
  **/
 void e1000_config_collision_dist(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_config_collision_dist\n");
 	if (hw->mac.ops.config_collision_dist)
 		hw->mac.ops.config_collision_dist(hw);
 }
@@ -573,7 +529,6 @@ void e1000_config_collision_dist(struct e1000_hw *hw)
  **/
 int e1000_rar_set(struct e1000_hw *hw, __u8 *addr, __u32 index)
 {
-	debug_uk_pr_info("e1000_rar_set\n");
 	if (hw->mac.ops.rar_set)
 		return hw->mac.ops.rar_set(hw, addr, index);
 
@@ -588,7 +543,6 @@ int e1000_rar_set(struct e1000_hw *hw, __u8 *addr, __u32 index)
  **/
 __s32 e1000_validate_mdi_setting(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_validate_mdi_setting\n");
 	if (hw->mac.ops.validate_mdi_setting)
 		return hw->mac.ops.validate_mdi_setting(hw);
 
@@ -606,7 +560,6 @@ __s32 e1000_validate_mdi_setting(struct e1000_hw *hw)
  **/
 __u32 e1000_hash_mc_addr(struct e1000_hw *hw, __u8 *mc_addr)
 {
-	debug_uk_pr_info("e1000_hash_mc_addr\n");
 	return e1000_hash_mc_addr_generic(hw, mc_addr);
 }
 
@@ -619,7 +572,6 @@ __u32 e1000_hash_mc_addr(struct e1000_hw *hw, __u8 *mc_addr)
  **/
 __s32 e1000_check_reset_block(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_check_reset_block\n");
 	if (hw->phy.ops.check_reset_block)
 		return hw->phy.ops.check_reset_block(hw);
 
@@ -637,7 +589,6 @@ __s32 e1000_check_reset_block(struct e1000_hw *hw)
  **/
 __s32 e1000_read_phy_reg(struct e1000_hw *hw, __u32 offset, __u16 *data)
 {
-	debug_uk_pr_info("e1000_read_phy_reg\n");
 	if (hw->phy.ops.read_reg)
 		return hw->phy.ops.read_reg(hw, offset, data);
 
@@ -655,7 +606,6 @@ __s32 e1000_read_phy_reg(struct e1000_hw *hw, __u32 offset, __u16 *data)
  **/
 __s32 e1000_write_phy_reg(struct e1000_hw *hw, __u32 offset, __u16 data)
 {
-	debug_uk_pr_info("e1000_write_phy_reg\n");
 	if (hw->phy.ops.write_reg)
 		return hw->phy.ops.write_reg(hw, offset, data);
 
@@ -671,7 +621,6 @@ __s32 e1000_write_phy_reg(struct e1000_hw *hw, __u32 offset, __u16 data)
  **/
 void e1000_release_phy(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_release_phy\n");
 	if (hw->phy.ops.release)
 		hw->phy.ops.release(hw);
 }
@@ -685,7 +634,6 @@ void e1000_release_phy(struct e1000_hw *hw)
  **/
 __s32 e1000_acquire_phy(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_acquire_phy\n");
 	if (hw->phy.ops.acquire)
 		return hw->phy.ops.acquire(hw);
 
@@ -698,7 +646,6 @@ __s32 e1000_acquire_phy(struct e1000_hw *hw)
  **/
 __s32 e1000_cfg_on_link_up(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_cfg_on_link_up\n");
 	if (hw->phy.ops.cfg_on_link_up)
 		return hw->phy.ops.cfg_on_link_up(hw);
 
@@ -715,7 +662,6 @@ __s32 e1000_cfg_on_link_up(struct e1000_hw *hw)
  **/
 __s32 e1000_get_cable_length(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_get_cable_length\n");
 	if (hw->phy.ops.get_cable_length)
 		return hw->phy.ops.get_cable_length(hw);
 
@@ -732,7 +678,6 @@ __s32 e1000_get_cable_length(struct e1000_hw *hw)
  **/
 __s32 e1000_get_phy_info(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_get_phy_info\n");
 	if (hw->phy.ops.get_info)
 		return hw->phy.ops.get_info(hw);
 
@@ -748,7 +693,6 @@ __s32 e1000_get_phy_info(struct e1000_hw *hw)
  **/
 __s32 e1000_phy_hw_reset(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_phy_hw_reset\n");
 	if (hw->phy.ops.reset)
 		return hw->phy.ops.reset(hw);
 
@@ -764,7 +708,6 @@ __s32 e1000_phy_hw_reset(struct e1000_hw *hw)
  **/
 __s32 e1000_phy_commit(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_phy_commit\n");
 	if (hw->phy.ops.commit)
 		return hw->phy.ops.commit(hw);
 
@@ -787,7 +730,6 @@ __s32 e1000_phy_commit(struct e1000_hw *hw)
  **/
 __s32 e1000_set_d0_lplu_state(struct e1000_hw *hw, bool active)
 {
-	debug_uk_pr_info("e1000_set_d0_lplu_state\n");
 	if (hw->phy.ops.set_d0_lplu_state)
 		return hw->phy.ops.set_d0_lplu_state(hw, active);
 
@@ -810,7 +752,6 @@ __s32 e1000_set_d0_lplu_state(struct e1000_hw *hw, bool active)
  **/
 __s32 e1000_set_d3_lplu_state(struct e1000_hw *hw, bool active)
 {
-	debug_uk_pr_info("e1000_set_d3_lplu_state\n");
 	if (hw->phy.ops.set_d3_lplu_state)
 		return hw->phy.ops.set_d3_lplu_state(hw, active);
 
@@ -827,7 +768,6 @@ __s32 e1000_set_d3_lplu_state(struct e1000_hw *hw, bool active)
  **/
 __s32 e1000_read_mac_addr(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_read_mac_addr\n");
 	if (hw->mac.ops.read_mac_addr)
 		return hw->mac.ops.read_mac_addr(hw);
 
@@ -847,7 +787,6 @@ __s32 e1000_read_mac_addr(struct e1000_hw *hw)
  **/
 __s32 e1000_read_pba_string(struct e1000_hw *hw, __u8 *pba_num, __u32 pba_num_size)
 {
-	debug_uk_pr_info("e1000_read_pba_string\n");
 	return e1000_read_pba_string_generic(hw, pba_num, pba_num_size);
 }
 
@@ -863,7 +802,6 @@ __s32 e1000_read_pba_string(struct e1000_hw *hw, __u8 *pba_num, __u32 pba_num_si
  **/
 __s32 e1000_read_pba_length(struct e1000_hw *hw, __u32 *pba_num_size)
 {
-	debug_uk_pr_info("e1000_read_pba_length\n");
 	return e1000_read_pba_length_generic(hw, pba_num_size);
 }
 
@@ -879,7 +817,6 @@ __s32 e1000_read_pba_length(struct e1000_hw *hw, __u32 *pba_num_size)
  **/
 __s32 e1000_read_pba_num(struct e1000_hw *hw, __u32 *pba_num)
 {
-	debug_uk_pr_info("e1000_read_pba_num\n");
 	return e1000_read_pba_num_generic(hw, pba_num);
 }
 
@@ -892,7 +829,6 @@ __s32 e1000_read_pba_num(struct e1000_hw *hw, __u32 *pba_num)
  **/
 __s32 e1000_validate_nvm_checksum(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_validate_nvm_checksum\n");
 	if (hw->nvm.ops.validate)
 		return hw->nvm.ops.validate(hw);
 
@@ -908,7 +844,6 @@ __s32 e1000_validate_nvm_checksum(struct e1000_hw *hw)
  **/
 __s32 e1000_update_nvm_checksum(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_update_nvm_checksum\n");
 	if (hw->nvm.ops.update)
 		return hw->nvm.ops.update(hw);
 
@@ -924,7 +859,6 @@ __s32 e1000_update_nvm_checksum(struct e1000_hw *hw)
  **/
 void e1000_reload_nvm(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_reload_nvm\n");
 	if (hw->nvm.ops.reload)
 		hw->nvm.ops.reload(hw);
 }
@@ -941,7 +875,6 @@ void e1000_reload_nvm(struct e1000_hw *hw)
  **/
 __s32 e1000_read_nvm(struct e1000_hw *hw, __u16 offset, __u16 words, __u16 *data)
 {
-	debug_uk_pr_info("e1000_read_nvm\n");
 	if (hw->nvm.ops.read)
 		return hw->nvm.ops.read(hw, offset, words, data);
 
@@ -960,7 +893,6 @@ __s32 e1000_read_nvm(struct e1000_hw *hw, __u16 offset, __u16 words, __u16 *data
  **/
 __s32 e1000_write_nvm(struct e1000_hw *hw, __u16 offset, __u16 words, __u16 *data)
 {
-	debug_uk_pr_info("e1000_write_nvm\n");
 	if (hw->nvm.ops.write)
 		return hw->nvm.ops.write(hw, offset, words, data);
 
@@ -980,7 +912,6 @@ __s32 e1000_write_nvm(struct e1000_hw *hw, __u16 offset, __u16 words, __u16 *dat
 __s32 e1000_write_8bit_ctrl_reg(struct e1000_hw *hw, __u32 reg, __u32 offset,
 			      __u8 data)
 {
-	debug_uk_pr_info("e1000_write_8bit_ctrl_reg\n");
 	return e1000_write_8bit_ctrl_reg_generic(hw, reg, offset, data);
 }
 
@@ -993,7 +924,6 @@ __s32 e1000_write_8bit_ctrl_reg(struct e1000_hw *hw, __u32 reg, __u32 offset,
  **/
 void e1000_power_up_phy(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_power_up_phy\n");
 	if (hw->phy.ops.power_up)
 		hw->phy.ops.power_up(hw);
 
@@ -1009,7 +939,6 @@ void e1000_power_up_phy(struct e1000_hw *hw)
  **/
 void e1000_power_down_phy(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_power_down_phy\n");
 	if (hw->phy.ops.power_down)
 		hw->phy.ops.power_down(hw);
 }
@@ -1022,7 +951,6 @@ void e1000_power_down_phy(struct e1000_hw *hw)
  **/
 void e1000_power_up_fiber_serdes_link(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_power_up_fiber_serdes_link\n");
 	if (hw->mac.ops.power_up_serdes)
 		hw->mac.ops.power_up_serdes(hw);
 }
@@ -1035,8 +963,6 @@ void e1000_power_up_fiber_serdes_link(struct e1000_hw *hw)
  **/
 void e1000_shutdown_fiber_serdes_link(struct e1000_hw *hw)
 {
-	debug_uk_pr_info("e1000_shutdown_fiber_serdes_link\n");
 	if (hw->mac.ops.shutdown_serdes)
 		hw->mac.ops.shutdown_serdes(hw);
 }
-

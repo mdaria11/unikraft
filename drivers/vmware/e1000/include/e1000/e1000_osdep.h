@@ -48,13 +48,11 @@
 
 #include "e1000_hw.h"
 
-#define DELAY(x) usleep(x) // usleep
+#define DELAY(x) usleep(x)
 #define usec_delay(x) DELAY(x)
 #define usec_delay_irq(x) DELAY(x)
 #define msec_delay(x) DELAY((x))
-// #define msec_delay(x) DELAY(1000*(x))
 #define msec_delay_irq(x) DELAY((x))
-// #define msec_delay_irq(x) DELAY(1000*(x))
 
 #define UNREFERENCED_PARAMETER(_p)
 #define UNREFERENCED_1PARAMETER(_p)
@@ -106,9 +104,9 @@ typedef int8_t		__s8;
 #define E1000_PCI_REG_ARRAY_ADDR(hw, reg, index) \
 	E1000_PCI_REG_ADDR((hw), (reg) + ((index) << 2))
 
-static inline uint32_t e1000_read_addr(volatile void *addr, int reg)
+static inline uint32_t e1000_read_addr(volatile void *addr, __u32 reg)
 {
-	uint64_t ret;
+	uint32_t ret;
 
 	ret = *(uint32_t *)(addr + reg);
 
@@ -118,6 +116,22 @@ static inline uint32_t e1000_read_addr(volatile void *addr, int reg)
 static inline void e1000_write_addr(volatile void *addr, __u32 reg, __u32 value)
 {
 	*(uint32_t *)(addr + reg) = value;
+}
+
+static inline uint32_t e1000_read_addr_array(volatile void *addr, __u32 reg, __u32 index)
+{
+	uint32_t ret;
+	uint32_t off = reg + (index << 2);
+
+	ret = *(uint32_t *)(addr + off);
+
+	return ret;
+}
+
+static inline void e1000_write_addr_array(volatile void *addr, __u32 reg, __u32 index, __u32 value)
+{
+	uint32_t off = reg + (index << 2);
+	*(uint32_t *)(addr + off) = value;
 }
 
 /* Necessary defines */
@@ -134,7 +148,6 @@ static inline void e1000_write_addr(volatile void *addr, __u32 reg, __u32 value)
 
 /* Register READ/WRITE macros */
 
-
 #define PCI_CONF_READ(type, ret, a, s)					\
 	do {								\
 		uint32_t _conf_data;					\
@@ -150,27 +163,15 @@ static inline void e1000_write_addr(volatile void *addr, __u32 reg, __u32 value)
 
 
 #define E1000_WRITE_REG(hw, reg, value) \
-	e1000_write_addr((volatile void *) ((uint64_t) hw->pdev->bar0 & 0xFFFFFFF0), reg, (value))
+	e1000_write_addr((volatile void *) ((uint64_t) hw->pdev->bar0 & 0xFFFFFFF0), (reg), (value))
 
-
-/*
-#define E1000_READ_REG(hw, reg) \
-	e1000_read_addr(E1000_PCI_REG_ADDR((hw), (reg)))
-
-#define E1000_WRITE_REG(hw, reg, value) \
-	E1000_PCI_REG_WRITE(E1000_PCI_REG_ADDR((hw), (reg)), (value))
-*/
-
-#define E1000_WRITE_REG_ARRAY(hw, reg, index, value) \
-	E1000_PCI_REG_WRITE(E1000_PCI_REG_ARRAY_ADDR((hw), (reg), (index)), (value)) // TODO
 
 #define E1000_READ_REG_ARRAY(hw, reg, index) \
-	E1000_PCI_REG(E1000_PCI_REG_ARRAY_ADDR((hw), (reg), (index))) // TODO
+	e1000_read_addr_array((volatile void *) ((uint64_t) hw->pdev->bar0 & 0xFFFFFFF0), (reg), (index))
 
-/*
-#define E1000_READ_REG_ARRAY_DWORD E1000_READ_REG_ARRAY
-#define E1000_WRITE_REG_ARRAY_DWORD E1000_WRITE_REG_ARRAY
-*/
+#define E1000_WRITE_REG_ARRAY(hw, reg, index, value) \
+	e1000_write_addr_array((volatile void *) ((uint64_t) hw->pdev->bar0 & 0xFFFFFFF0), (reg), (index), (value))
+
 
 /*
  * To be able to do IO write, we need to map IO BAR
@@ -179,10 +180,8 @@ static inline void e1000_write_addr(volatile void *addr, __u32 reg, __u32 value)
  * Fortunatelly we need it only for legacy hw support.
  */
 
-/*
 #define E1000_WRITE_REG_IO(hw, reg, value) \
 	E1000_WRITE_REG(hw, reg, value)
-*/
 
 #define STATIC static
 

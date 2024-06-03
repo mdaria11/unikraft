@@ -157,8 +157,6 @@ struct e1000_adapter {
 #define E1000_DEV_PRIVATE_TO_FILTER_INFO(adapter) \
 	(&((struct e1000_adapter *)adapter)->filter)
 
-// uint32_t em_get_max_pktlen(struct rte_eth_dev *dev);
-
 /*
  * RX/TX EM function prototypes
  */
@@ -166,13 +164,9 @@ void eth_em_tx_queue_release(void *txq);
 void eth_em_rx_queue_release(void *rxq);
 
 void em_dev_clear_queues(struct uk_netdev *dev);
-// void em_dev_free_queues(struct rte_eth_dev *dev);
 
 struct uk_netdev_rx_queue * eth_em_rx_queue_setup(struct uk_netdev *dev, uint16_t rx_queue_id,
 		uint16_t nb_rx_desc, struct uk_netdev_rxqueue_conf *rx_conf);
-
-// uint32_t eth_em_rx_queue_count(struct rte_eth_dev *dev,
-// 		uint16_t rx_queue_id);
 
 int eth_em_rx_descriptor_done(void *rx_queue, uint16_t offset);
 
@@ -185,18 +179,6 @@ struct uk_netdev_tx_queue * eth_em_tx_queue_setup(struct uk_netdev *dev, uint16_
 int eth_em_rx_init(struct e1000_hw *hw);
 
 void eth_em_tx_init(struct e1000_hw *hw);
-
-// uint16_t eth_em_xmit_pkts(void *tx_queue, struct rte_mbuf **tx_pkts,
-// 		uint16_t nb_pkts);
-
-// uint16_t eth_em_prep_pkts(void *txq, struct rte_mbuf **tx_pkts,
-// 		uint16_t nb_pkts);
-
-// uint16_t eth_em_recv_pkts(void *rx_queue, struct rte_mbuf **rx_pkts,
-// 		uint16_t nb_pkts);
-
-// uint16_t eth_em_recv_scattered_pkts(void *rx_queue, struct rte_mbuf **rx_pkts,
-// 		uint16_t nb_pkts);
 
 int eth_em_recv_pkts(struct uk_netdev *dev, struct uk_netdev_rx_queue *queue,
 	struct uk_netbuf **pkt);
