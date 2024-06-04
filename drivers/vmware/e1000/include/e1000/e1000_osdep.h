@@ -48,7 +48,7 @@
 
 #include "e1000_hw.h"
 
-#define DELAY(x) usleep(x)
+#define DELAY(x) sleep(x/1000000)
 #define usec_delay(x) DELAY(x)
 #define usec_delay_irq(x) DELAY(x)
 #define msec_delay(x) DELAY((x))

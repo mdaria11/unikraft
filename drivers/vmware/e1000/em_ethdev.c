@@ -125,7 +125,7 @@ eth_em_dev_init(struct pci_device * pci_dev)
 	hw->netdev.ops = &eth_em_dev_ops;
 	hw->netdev.rx_one = &eth_em_recv_pkts;
 	hw->netdev.tx_one = &eth_em_xmit_pkts;
-	hw->hw_addr = (void *)(hw->pdev->bar0 & 0xFFFFFFF0);
+	hw->hw_addr = (unsigned char *)(hw->pdev->bar0 & 0xFFFFFFF0);
 	hw->device_id = pci_dev->id.device_id;
 
 	rc = uk_netdev_drv_register(&hw->netdev, a, drv_name);
@@ -423,7 +423,7 @@ eth_em_rx_queue_intr_disable(__unused struct uk_netdev *dev, __unused struct uk_
 }
 
 static void
-eth_em_infos_get(struct uk_netdev *dev, struct uk_netdev_info *dev_info)
+eth_em_infos_get(__unused struct uk_netdev *dev, struct uk_netdev_info *dev_info)
 {
 
 	dev_info->max_rx_queues = 1;
@@ -541,7 +541,7 @@ eth_em_default_mac_addr_get(struct uk_netdev *n)
 	UK_ASSERT(n);
 	d = to_e1000dev(n);
 
-	return &d->mac.addr;
+	return (struct uk_hwaddr *)&d->mac.addr;
 }
 
 static int

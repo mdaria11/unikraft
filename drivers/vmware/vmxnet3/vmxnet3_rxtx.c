@@ -521,7 +521,7 @@ vmxnet3_recv_pkts(struct uk_netdev *dev __unused,
 
 		idx = rcd->rxdIdx;
 		ring_idx = vmxnet3_get_ring_idx(hw, rcd->rqID);
-		rxd = rxq->cmd_ring[ring_idx].base + idx;
+		rxd = (struct Vmxnet3_RxDesc *) rxq->cmd_ring[ring_idx].base + idx;
 		rbi = rxq->cmd_ring[ring_idx].buf_info + idx;
 
 		UK_ASSERT(rcd->len <= rxd->len);
@@ -754,7 +754,6 @@ vmxnet3_dev_rx_queue_setup(struct uk_netdev *dev,
 	struct vmxnet3_rx_data_ring *data_ring;
 	int size;
 	uint8_t i;
-	char mem_name[32];
 
 	rxq = uk_calloc(hw->a, 1, sizeof(struct uk_netdev_rx_queue));
 	if (rxq == NULL) {

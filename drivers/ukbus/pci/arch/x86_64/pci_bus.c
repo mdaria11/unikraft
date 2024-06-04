@@ -96,7 +96,7 @@ static inline int pci_driver_add_device(struct pci_driver *drv,
 			| (addr->devid << PCI_DEVICE_SHIFT);
 	PCI_CONF_READ(__u16, &dev->base, config_addr, IOBAR);
 	PCI_CONF_READ(__u8, &dev->irq, config_addr, IRQ);
-	uk_pr_info("dev->base: 0x%08X\n", dev->base);
+	uk_pr_info("dev->base: 0x%08lX\n", dev->base);
 
 	PCI_CONF_READ(__u32, &dev->bar0, config_addr, BAR0);
 	uk_pr_info("dev->bar0: 0x%08X\n", dev->bar0);

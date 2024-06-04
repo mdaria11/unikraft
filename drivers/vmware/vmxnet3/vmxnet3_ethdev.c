@@ -202,7 +202,7 @@ vmxnet3_add_dev(struct pci_device * pci_dev)
 	hw = uk_calloc(a, sizeof(*hw), 1);
 	hw->a = a;
 	if (!hw) {
-		uk_pr_err("Failed to allocate e1000 device\n");
+		uk_pr_err("Failed to allocate vmxnet3 device\n");
 		return -ENOMEM;
 	}
 	hw->netdev.ops = &vmxnet3_dev_ops;
@@ -215,8 +215,8 @@ vmxnet3_add_dev(struct pci_device * pci_dev)
 	hw->num_rx_queues = 1;
 	hw->num_tx_queues = 1;
 	hw->bufs_per_pkt = 1;
-	hw->hw_addr1 = pci_dev->bar1;
-	hw->hw_addr0 = pci_dev->bar0;
+	hw->hw_addr1 = (uint32_t *)pci_dev->bar1;
+	hw->hw_addr0 = (uint32_t *)pci_dev->bar0;
 
 	rc = uk_netdev_drv_register(&hw->netdev, a, drv_name);
 	if (rc < 0) {
@@ -265,8 +265,6 @@ vmxnet3_add_dev(struct pci_device * pci_dev)
 	/* Getting MAC Address */
 	mac_lo = VMXNET3_READ_BAR1_REG(hw, VMXNET3_REG_MACL);
 	mac_hi = VMXNET3_READ_BAR1_REG(hw, VMXNET3_REG_MACH);
-	debug_uk_pr_info("mac_hi %08x\n", mac_hi);
-	debug_uk_pr_info("mac_hi %08x\n", mac_lo);
 
 	memcpy(hw->perm_addr, &mac_lo, 4);
 	memcpy(hw->perm_addr + 4, &mac_hi, 2);
@@ -614,10 +612,6 @@ vmxnet3_dev_start(struct uk_netdev *dev)
 	if (ret == 0) {
 		VMXNET3_WRITE_BAR1_REG(hw, VMXNET3_REG_CMD,
 				       VMXNET3_CMD_REGISTER_MEMREGS);
-		ret = VMXNET3_READ_BAR1_REG(hw, VMXNET3_REG_CMD);
-		if (ret != 0)
-			uk_pr_err("Failed in setup memory region cmd\n");
-		ret = 0;
 	} else {
 		uk_pr_err("Failed to setup memory region\n");
 	}
@@ -678,7 +672,7 @@ vmxnet3_mac_addr_get(struct uk_netdev *dev)
 	hw = to_vmxnet3dev(dev);
 	UK_ASSERT(hw);
 
-	return &hw->perm_addr;
+	return (struct uk_hwaddr *)&hw->perm_addr;
 }
 
 /* Updating rxmode through Vmxnet3_DriverShared structure in adapter */

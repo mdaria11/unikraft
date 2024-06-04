@@ -50,7 +50,6 @@ void multiboot_entry(struct lcpu *lcpu, struct multiboot_info *mi)
 	__sz offset, cmdline_len;
 	__paddr_t start, end;
 	__u32 i;
-	int rc;
 
 	bi = ukplat_bootinfo_get();
 	if (unlikely(!bi))
@@ -112,11 +111,8 @@ void multiboot_entry(struct lcpu *lcpu, struct multiboot_info *mi)
 	memset(mrd.name, 0, sizeof(mrd.name));
 #endif /* CONFIG_UKPLAT_MEMRNAME */
 
-	/* Add map ranges from the multiboot info to the memory region list
-	 * CAUTION: These could generally overlap with regions already in the
-	 * list. We thus split new free regions accordingly to remove allocated
-	 * ranges. For all other ranges, we assume RESERVED type and that they
-	 * do NOT overlap with other allocated ranges (e.g., modules).
+	/* Add the map ranges above the BIOS area provided by the bootloader
+	 * from the multiboot info structure to the memory region list.
 	 */
 	if (mi->flags & MULTIBOOT_INFO_MEM_MAP) {
 		for (offset = 0; offset < mi->mmap_length;

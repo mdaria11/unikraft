@@ -47,14 +47,11 @@ POSSIBILITY OF SUCH DAMAGE.
 static __s32  e1000_init_phy_params_82540(struct e1000_hw *hw);
 static __s32  e1000_init_nvm_params_82540(struct e1000_hw *hw);
 static __s32  e1000_init_mac_params_82540(struct e1000_hw *hw);
-static __s32  e1000_adjust_serdes_amplitude_82540(struct e1000_hw *hw);
 static void e1000_clear_hw_cntrs_82540(struct e1000_hw *hw);
 static __s32  e1000_init_hw_82540(struct e1000_hw *hw);
 static __s32  e1000_reset_hw_82540(struct e1000_hw *hw);
 static __s32  e1000_set_phy_mode_82540(struct e1000_hw *hw);
-static __s32  e1000_set_vco_speed_82540(struct e1000_hw *hw);
 static __s32  e1000_setup_copper_link_82540(struct e1000_hw *hw);
-static __s32  e1000_setup_fiber_serdes_link_82540(struct e1000_hw *hw);
 static void e1000_power_down_phy_copper_82540(struct e1000_hw *hw);
 static __s32  e1000_read_mac_addr_82540(struct e1000_hw *hw);
 
@@ -87,7 +84,6 @@ static __s32 e1000_init_phy_params_82540(struct e1000_hw *hw)
 
 	ret_val = e1000_get_phy_id(hw);
 	if (ret_val) {
-		debug_uk_pr_info("e1000_get_phy_id = %d\n", ret_val);
 		return ret_val;
 	}
 
@@ -149,7 +145,7 @@ static __s32 e1000_init_mac_params_82540(struct e1000_hw *hw)
 	struct e1000_mac_info *mac = &hw->mac;
 	__s32 ret_val = E1000_SUCCESS;
 
-	/* Set media type */
+	/* Set media type (only copper is supported)*/
 	hw->phy.media_type = e1000_media_type_copper;
 
 	/* Set mta register count */
@@ -170,33 +166,11 @@ static __s32 e1000_init_mac_params_82540(struct e1000_hw *hw)
 	/* link setup */
 	mac->ops.setup_link = e1000_setup_link_generic;
 	/* physical interface setup */
-	mac->ops.setup_physical_interface =
-		(hw->phy.media_type == e1000_media_type_copper)
-			? e1000_setup_copper_link_82540
-			: e1000_setup_fiber_serdes_link_82540;
+	mac->ops.setup_physical_interface = e1000_setup_copper_link_82540;
 	/* check for link */
-	switch (hw->phy.media_type) {
-	case e1000_media_type_copper:
-		mac->ops.check_for_link = e1000_check_for_copper_link_generic;
-		break;
-	case e1000_media_type_fiber:
-		mac->ops.check_for_link = e1000_check_for_fiber_link_generic;
-		break;
-	case e1000_media_type_internal_serdes:
-		mac->ops.check_for_link = e1000_check_for_serdes_link_generic;
-		break;
-	default:
-		uk_pr_crit("No valid link found.\n");
-		ret_val = -E1000_ERR_CONFIG;
-		goto out;
-		break;
-	}
-
+	mac->ops.check_for_link = e1000_check_for_copper_link_generic;
 	/* link info */
-	mac->ops.get_link_up_info =
-		(hw->phy.media_type == e1000_media_type_copper)
-			? e1000_get_speed_and_duplex_copper_generic
-			: e1000_get_speed_and_duplex_fiber_serdes_generic;
+	mac->ops.get_link_up_info = e1000_get_speed_and_duplex_copper_generic;
 	/* multicast address update */
 	mac->ops.update_mc_addr_list = e1000_update_mc_addr_list_generic;
 	/* read mac address */
@@ -213,7 +187,6 @@ static __s32 e1000_init_mac_params_82540(struct e1000_hw *hw)
 	/* clear hardware counters */
 	mac->ops.clear_hw_cntrs = e1000_clear_hw_cntrs_82540;
 
-out:
 	return ret_val;
 }
 
@@ -258,7 +231,6 @@ static __s32 e1000_reset_hw_82540(struct e1000_hw *hw)
 
 	uk_pr_debug("Issuing a global reset to 82540/82545/82546 MAC\n");
 	E1000_WRITE_REG(hw, E1000_CTRL_DUP, ctrl | E1000_CTRL_RST);
-
 
 	/* Wait for EEPROM reload */
 	msec_delay(5);
@@ -380,122 +352,6 @@ static __s32 e1000_setup_copper_link_82540(struct e1000_hw *hw)
 		goto out;
 
 	ret_val = e1000_setup_copper_link_generic(hw);
-
-out:
-	return ret_val;
-}
-
-/**
- *  e1000_setup_fiber_serdes_link_82540 - Setup link for fiber/serdes
- *  @hw: pointer to the HW structure
- *
- *  Set the output amplitude to the value in the EEPROM and adjust the VCO
- *  speed to improve Bit Error Rate (BER) performance.  Configures collision
- *  distance and flow control for fiber and serdes links.  Upon successful
- *  setup, poll for link.
- **/
-static __s32 e1000_setup_fiber_serdes_link_82540(struct e1000_hw *hw)
-{
-	__s32 ret_val = E1000_SUCCESS;
-
-	if (hw->phy.media_type == e1000_media_type_internal_serdes) {
-		/*
-			* If we're on serdes media, adjust the output
-			* amplitude to value set in the EEPROM.
-			*/
-		ret_val = e1000_adjust_serdes_amplitude_82540(hw);
-		if (ret_val)
-			goto out;
-	}
-	/* Adjust VCO speed to improve BER performance */
-	ret_val = e1000_set_vco_speed_82540(hw);
-	if (ret_val)
-		goto out;
-
-
-	ret_val = e1000_setup_fiber_serdes_link_generic(hw);
-
-out:
-	return ret_val;
-}
-
-/**
- *  e1000_adjust_serdes_amplitude_82540 - Adjust amplitude based on EEPROM
- *  @hw: pointer to the HW structure
- *
- *  Adjust the SERDES output amplitude based on the EEPROM settings.
- **/
-static __s32 e1000_adjust_serdes_amplitude_82540(struct e1000_hw *hw)
-{
-	__s32 ret_val;
-	__u16 nvm_data;
-
-	ret_val = hw->nvm.ops.read(hw, NVM_SERDES_AMPLITUDE, 1, &nvm_data);
-	if (ret_val)
-		goto out;
-
-	if (nvm_data != NVM_RESERVED_WORD) {
-		/* Adjust serdes output amplitude only. */
-		nvm_data &= NVM_SERDES_AMPLITUDE_MASK;
-		ret_val = hw->phy.ops.write_reg(hw, M88E1000_PHY_EXT_CTRL,
-						nvm_data);
-		if (ret_val)
-			goto out;
-	}
-
-out:
-	return ret_val;
-}
-
-/**
- *  e1000_set_vco_speed_82540 - Set VCO speed for better performance
- *  @hw: pointer to the HW structure
- *
- *  Set the VCO speed to improve Bit Error Rate (BER) performance.
- **/
-static __s32 e1000_set_vco_speed_82540(struct e1000_hw *hw)
-{
-	__s32  ret_val;
-	__u16 default_page = 0;
-	__u16 phy_data;
-
-	/* Set PHY register 30, page 5, bit 8 to 0 */
-
-	ret_val = hw->phy.ops.read_reg(hw, M88E1000_PHY_PAGE_SELECT,
-				       &default_page);
-	if (ret_val)
-		goto out;
-
-	ret_val = hw->phy.ops.write_reg(hw, M88E1000_PHY_PAGE_SELECT, 0x0005);
-	if (ret_val)
-		goto out;
-
-	ret_val = hw->phy.ops.read_reg(hw, M88E1000_PHY_GEN_CONTROL, &phy_data);
-	if (ret_val)
-		goto out;
-
-	phy_data &= ~M88E1000_PHY_VCO_REG_BIT8;
-	ret_val = hw->phy.ops.write_reg(hw, M88E1000_PHY_GEN_CONTROL, phy_data);
-	if (ret_val)
-		goto out;
-
-	/* Set PHY register 30, page 4, bit 11 to 1 */
-
-	ret_val = hw->phy.ops.write_reg(hw, M88E1000_PHY_PAGE_SELECT, 0x0004);
-	if (ret_val)
-		goto out;
-
-	ret_val = hw->phy.ops.read_reg(hw, M88E1000_PHY_GEN_CONTROL, &phy_data);
-	if (ret_val)
-		goto out;
-
-	phy_data |= M88E1000_PHY_VCO_REG_BIT11;
-	ret_val = hw->phy.ops.write_reg(hw, M88E1000_PHY_GEN_CONTROL, phy_data);
-	if (ret_val)
-		goto out;
-
-	ret_val = hw->phy.ops.write_reg(hw, M88E1000_PHY_PAGE_SELECT,
-					default_page);
 
 out:
 	return ret_val;

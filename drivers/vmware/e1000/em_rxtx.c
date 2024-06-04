@@ -249,7 +249,7 @@ int eth_em_xmit_pkts(__unused struct uk_netdev *dev,
 	uint16_t nb_used;
 	uint32_t new_ctx;
 
-	txq = queue;
+	txq = (struct em_tx_queue *) queue;
 	sw_ring = txq->sw_ring;
 	txr     = txq->tx_ring;
 	tx_id   = txq->tx_tail;
@@ -347,7 +347,7 @@ int eth_em_xmit_pkts(__unused struct uk_netdev *dev,
 			 * Set up Transmit Data Descriptor.
 			 */
 			slen = m_seg->buflen;
-			buf_dma_addr = m_seg->buf;
+			buf_dma_addr = (uint64_t) m_seg->buf;
 
 			txd->buffer_addr = buf_dma_addr;
 			txd->lower.data = cmd_type_len | slen;
@@ -472,7 +472,7 @@ eth_em_recv_pkts(__unused struct uk_netdev *dev, struct uk_netdev_rx_queue *rx_q
 		/* Rearm RXD: attach new mbuf and reset status to zero. */
 		rxm = rxe->mbuf;
 		rxe->mbuf = nmb;
-		dma_addr = nmb->buf;
+		dma_addr = (uint64_t) nmb->buf;
 
 		rxdp->buffer_addr = dma_addr;
 		rxdp->status = 0;
@@ -635,7 +635,7 @@ eth_em_tx_queue_setup(struct uk_netdev *dev,
 
 	/* Free memory prior to re-allocation if needed... */
 	if (dev->_tx_queue[queue_idx] != NULL) {
-		em_tx_queue_release(dev->_tx_queue[queue_idx]);
+		em_tx_queue_release((struct em_tx_queue *)dev->_tx_queue[queue_idx]);
 		dev->_tx_queue[queue_idx] = NULL;
 	}
 
@@ -671,15 +671,15 @@ eth_em_tx_queue_setup(struct uk_netdev *dev,
 	txq->hw = hw;
 
 	txq->tdt_reg_addr = E1000_PCI_REG_ADDR(hw, E1000_TDT(queue_idx));
-	txq->tx_ring_phys_addr = mem;
+	txq->tx_ring_phys_addr = (uint64_t) mem;
 	txq->tx_ring = (struct e1000_data_desc *) mem;
 
 	em_reset_tx_queue(txq);
 
-	dev->_tx_queue[queue_idx] = txq;
+	dev->_tx_queue[queue_idx] = (struct uk_netdev_tx_queue *) txq;
 	hw->nb_tx_queues++;
 
-	return txq;
+	return (struct uk_netdev_tx_queue *) txq;
 }
 
 static void
@@ -747,7 +747,7 @@ eth_em_rx_queue_setup(struct uk_netdev *dev,
 
 	/* Free memory prior to re-allocation if needed. */
 	if (dev->_rx_queue[queue_idx] != NULL) {
-		em_rx_queue_release(dev->_rx_queue[queue_idx]);
+		em_rx_queue_release((struct em_rx_queue *)dev->_rx_queue[queue_idx]);
 		debug_uk_pr_info("Setting dev->_rx_queue[queue_idx] to null\n");
 		dev->_rx_queue[queue_idx] = NULL;
 	}
@@ -785,17 +785,17 @@ eth_em_rx_queue_setup(struct uk_netdev *dev,
 
 	rxq->rdt_reg_addr = E1000_PCI_REG_ADDR(hw, E1000_RDT(queue_idx));
 	rxq->rdh_reg_addr = E1000_PCI_REG_ADDR(hw, E1000_RDH(queue_idx));
-	rxq->rx_ring_phys_addr = mem;
+	rxq->rx_ring_phys_addr = (uint64_t) mem;
 	rxq->rx_ring = (struct e1000_rx_desc *) mem;
 
-	dev->_rx_queue[queue_idx] = rxq;
+	dev->_rx_queue[queue_idx] = (struct uk_netdev_rx_queue *) rxq;
 	hw->nb_rx_queues++;
 	em_reset_rx_queue(rxq);
 
 	rxq->alloc_rxpkts = rx_conf->alloc_rxpkts;
 	rxq->alloc_rxpkts_argp = rx_conf->alloc_rxpkts_argp;
 
-	return rxq;
+	return (struct uk_netdev_rx_queue *)rxq;
 }
 
 void
@@ -809,7 +809,7 @@ em_dev_clear_queues(struct uk_netdev *dev)
 	hw = to_e1000dev(dev);
 
 	for (i = 0; i < hw->nb_tx_queues; i++) {
-		txq = dev->_tx_queue[i];
+		txq = (struct em_tx_queue *)dev->_tx_queue[i];
 		if (txq != NULL) {
 			em_tx_queue_release_mbufs(txq);
 			em_reset_tx_queue(txq);
@@ -817,7 +817,7 @@ em_dev_clear_queues(struct uk_netdev *dev)
 	}
 
 	for (i = 0; i < hw->nb_rx_queues; i++) {
-		rxq = dev->_rx_queue[i];
+		rxq = (struct em_rx_queue *)dev->_rx_queue[i];
 		if (rxq != NULL) {
 			em_rx_queue_release_mbufs(rxq);
 			em_reset_rx_queue(rxq);
@@ -920,7 +920,7 @@ em_alloc_rx_queue_mbufs(struct em_rx_queue *rxq)
 			return -ENOMEM;
 		}
 
-		dma_addr = mbuf->buf;
+		dma_addr = (uint64_t)mbuf->buf;
 
 		/* Clear HW ring memory */
 		rxq->rx_ring[i] = rxd_init;
@@ -977,7 +977,7 @@ eth_em_rx_init(struct e1000_hw *hw)
 		uint64_t bus_addr;
 		uint32_t rxdctl;
 
-		rxq = dev->_rx_queue[i];
+		rxq = (struct em_rx_queue *)dev->_rx_queue[i];
 
 		/* Allocate buffers for descriptor rings and setup queue */
 		ret = em_alloc_rx_queue_mbufs(rxq);
@@ -1062,7 +1062,7 @@ eth_em_tx_init(struct e1000_hw *hw)
 	/* Setup the Base and Length of the Tx Descriptor Rings. */
 	for (i = 0; i < hw->nb_tx_queues; i++) {
 		uint64_t bus_addr;
-		txq = dev->_tx_queue[i];
+		txq = (struct em_tx_queue *)dev->_tx_queue[i];
 		bus_addr = txq->tx_ring_phys_addr;
 		E1000_WRITE_REG(hw, E1000_TDLEN(i),
 				txq->nb_tx_desc *
