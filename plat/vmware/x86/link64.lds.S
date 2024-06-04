@@ -26,32 +26,6 @@
 #include <uk/arch/limits.h> /* for __PAGE_SIZE */
 #include <uk/plat/common/common.lds.h>
 
-#define TLS_VMWARE_SECTIONS							\
-	. = ALIGN(0x20);						\
-	_tls_start = .;							\
-	.tdata :							\
-	{								\
-		*(.tdata)						\
-		*(.tdata.*)						\
-		*(.gnu.linkonce.td.*)					\
-	} UK_SEGMENT_TLS UK_SEGMENT_TLS_LOAD				\
-	_etdata = .;							\
-	.tbss :								\
-	{								\
-		*(.tbss)						\
-		*(.tbss.*)						\
-		*(.gnu.linkonce.tb.*)					\
-		*(.tcommon)						\
-	}								\
-	/*								\
-	 * NOTE: Because the .tbss section is zero-sized in the final	\
-	 *       ELF image, just setting _tls_end to the end of it	\
-	 *       does not give us the the size of the memory area once	\
-	 *       loaded, so we use SIZEOF to have it point to the end.	\
-	 *       _tls_end is only used to compute the .tbss size.	\
-	 */								\
-	_tls_end = . + SIZEOF(.tbss);
-
 PHDRS
 {
 	text PT_LOAD FLAGS(PHDRS_PF_RX);
@@ -119,7 +93,31 @@ SECTIONS
 	}
 	_ectors = .;
 
-	TLS_VMWARE_SECTIONS
+	/* TLS Sections */
+	. = ALIGN(0x20);
+	_tls_start = .;
+	.tdata :
+	{
+		*(.tdata)
+		*(.tdata.*)
+		*(.gnu.linkonce.td.*)
+	} UK_SEGMENT_TLS UK_SEGMENT_TLS_LOAD
+	_etdata = .;
+	.tbss :
+	{
+		*(.tbss)
+		*(.tbss.*)
+		*(.gnu.linkonce.tb.*)
+		*(.tcommon)
+	}
+	/*
+	 * NOTE: Because the .tbss section is zero-sized in the final
+	 *       ELF image, just setting _tls_end to the end of it
+	 *       does not give us the the size of the memory area once
+	 *       loaded, so we use SIZEOF to have it point to the end.
+	 *       _tls_end is only used to compute the .tbss size.
+	 */
+	_tls_end = . + SIZEOF(.tbss);
 
 	DATA_SECTIONS
 

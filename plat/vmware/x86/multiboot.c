@@ -119,6 +119,7 @@ void multiboot_entry(struct lcpu *lcpu, struct multiboot_info *mi)
 		     offset += m->size + sizeof(m->size)) {
 			m = (multiboot_memory_map_t *)(mi->mmap_addr + offset);
 
+			/* Skip the BIOS area */
 			start = MAX(m->addr, __END);
 			end   = m->addr + m->len;
 			if (unlikely(end <= start || end - start < PAGE_SIZE))
