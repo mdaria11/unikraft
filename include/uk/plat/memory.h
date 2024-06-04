@@ -61,6 +61,7 @@ extern "C" {
 #define UKPLAT_MEMRT_CMDLINE		0x0010	/* Command line */
 #define UKPLAT_MEMRT_DEVICETREE		0x0020	/* Device tree */
 #define UKPLAT_MEMRT_STACK		0x0040	/* Thread stack */
+#define UKPLAT_MEMRT_DEVICE		0x0080	/* Device region */
 
 /* Memory region flags */
 #define UKPLAT_MEMRF_ALL		0xffff
@@ -69,9 +70,6 @@ extern "C" {
 #define UKPLAT_MEMRF_READ		0x0001	/* Region is readable */
 #define UKPLAT_MEMRF_WRITE		0x0002	/* Region is writable */
 #define UKPLAT_MEMRF_EXECUTE		0x0004	/* Region is executable */
-
-#define UKPLAT_MEMRF_UNMAP		0x0010	/* Must be unmapped at boot */
-#define UKPLAT_MEMRF_MAP		0x0020	/* Must be mapped at boot */
 
 /**
  * Descriptor of a memory region
@@ -108,6 +106,7 @@ struct ukplat_memregion_desc {
  *	UKPLAT_MEMRT_CMDLINE		Command line
  *	UKPLAT_MEMRT_DEVICETREE		Device tree
  *	UKPLAT_MEMRT_STACK		Thread stack
+ *	UKPLAT_MEMRT_DEVICE		Device
  * @param mrd pointer to the memory region descriptor whose type to validate
  */
 #define UK_ASSERT_VALID_MRD_TYPE(mrd)					\
@@ -126,6 +125,8 @@ struct ukplat_memregion_desc {
 		case UKPLAT_MEMRT_DEVICETREE:				\
 			__fallthrough;					\
 		case UKPLAT_MEMRT_STACK:				\
+			__fallthrough;					\
+		case UKPLAT_MEMRT_DEVICE:				\
 			break;						\
 		default:						\
 			UK_CRASH("Invalid mrd type: %hu\n",		\
@@ -149,9 +150,7 @@ struct ukplat_memregion_desc {
 	do {								\
 		__u16 flags_all __maybe_unused = UKPLAT_MEMRF_READ    |	\
 						 UKPLAT_MEMRF_WRITE   |	\
-						 UKPLAT_MEMRF_EXECUTE |	\
-						 UKPLAT_MEMRF_UNMAP   |	\
-						 UKPLAT_MEMRF_MAP;	\
+						 UKPLAT_MEMRF_EXECUTE;	\
 									\
 		UK_ASSERT(((mrd)->flags & flags_all) == (mrd)->flags);	\
 	} while (0)

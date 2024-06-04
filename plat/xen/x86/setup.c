@@ -146,8 +146,7 @@ static int _init_mem(struct ukplat_bootinfo *const bi)
 		.len = (max_pfn - start_pfn) << PAGE_SHIFT,
 		.pg_count = max_pfn - start_pfn,
 		.type = UKPLAT_MEMRT_FREE,
-		.flags = UKPLAT_MEMRF_READ | UKPLAT_MEMRF_WRITE |
-			 UKPLAT_MEMRF_MAP,
+		.flags = UKPLAT_MEMRF_READ | UKPLAT_MEMRF_WRITE,
 	};
 #if CONFIG_UKPLAT_MEMRNAME
 	strncpy(mrd.name, "heap", sizeof(mrd.name) - 1);
@@ -156,23 +155,7 @@ static int _init_mem(struct ukplat_bootinfo *const bi)
 	if (unlikely(rc < 0))
 		return rc;
 
-	mrd = (struct ukplat_memregion_desc) {
-		.pbase = __PADDR_MAX,
-		.vbase = VIRT_DEMAND_AREA,
-		.pg_off = 0,
-		.len   = DEMAND_MAP_PAGES * PAGE_SIZE,
-		.pg_count = DEMAND_MAP_PAGES,
-		.type  = UKPLAT_MEMRT_RESERVED,
-		.flags = UKPLAT_MEMRF_READ | UKPLAT_MEMRF_MAP,
-	};
-#if CONFIG_UKPLAT_MEMRNAME
-	strncpy(mrd.name, "demand", sizeof(mrd.name) - 1);
-#endif
-	rc = ukplat_memregion_list_insert(&bi->mrds, &mrd);
-	if (unlikely(rc < 0))
-		return rc;
-
-	_init_mem_demand_area((unsigned long)mrd.vbase, DEMAND_MAP_PAGES);
+	_init_mem_demand_area((unsigned long)VIRT_DEMAND_AREA, DEMAND_MAP_PAGES);
 
 	/* initrd */
 	mrd = (struct ukplat_memregion_desc){0};
@@ -186,8 +169,7 @@ static int _init_mem(struct ukplat_bootinfo *const bi)
 		mrd.len = (size_t)HYPERVISOR_start_info->mod_len;
 		mrd.pg_count = PAGE_COUNT(mrd.len + mrd.pg_off);
 		mrd.type = UKPLAT_MEMRT_INITRD;
-		mrd.flags = UKPLAT_MEMRF_READ | UKPLAT_MEMRF_WRITE |
-			    UKPLAT_MEMRF_MAP;
+		mrd.flags = UKPLAT_MEMRF_READ | UKPLAT_MEMRF_WRITE;
 #if CONFIG_UKPLAT_MEMRNAME
 		strncpy(mrd.name, "initrd", sizeof(mrd.name) - 1);
 #endif
@@ -211,7 +193,7 @@ static void _libxenplat_x86bootinfo_setup_cmdl(struct ukplat_bootinfo *bi)
 		cmdline_len = sizeof(CONFIG_UK_NAME) - 1;
 
 	cmdline = ukplat_memregion_alloc(cmdline_len, UKPLAT_MEMRT_CMDLINE,
-					 UKPLAT_MEMRF_READ | UKPLAT_MEMRF_MAP);
+					 UKPLAT_MEMRF_READ);
 	if (unlikely(!cmdline))
 		UK_CRASH("Could not allocate command-line memory");
 
@@ -226,7 +208,7 @@ static void _libxenplat_x86bootinfo_setup_cmdl(struct ukplat_bootinfo *bi)
 	 * from the original cmdline obtained above
 	 */
 	cmdline = ukplat_memregion_alloc(cmdline_len, UKPLAT_MEMRT_KERNEL,
-					 UKPLAT_MEMRF_READ | UKPLAT_MEMRF_MAP);
+					 UKPLAT_MEMRF_READ);
 	if (unlikely(!cmdline))
 		UK_CRASH("Could not allocate scratch command-line memory");
 
