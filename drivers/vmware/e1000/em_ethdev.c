@@ -125,7 +125,7 @@ eth_em_dev_init(struct pci_device * pci_dev)
 	hw->netdev.ops = &eth_em_dev_ops;
 	hw->netdev.rx_one = &eth_em_recv_pkts;
 	hw->netdev.tx_one = &eth_em_xmit_pkts;
-	hw->hw_addr = (unsigned char *)(hw->pdev->bar0 & 0xFFFFFFF0);
+	hw->hw_addr = (unsigned char *) (long) (hw->pdev->bar0 & 0xFFFFFFF0);
 	hw->device_id = pci_dev->id.device_id;
 
 	rc = uk_netdev_drv_register(&hw->netdev, a, drv_name);

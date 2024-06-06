@@ -215,8 +215,8 @@ vmxnet3_add_dev(struct pci_device * pci_dev)
 	hw->num_rx_queues = 1;
 	hw->num_tx_queues = 1;
 	hw->bufs_per_pkt = 1;
-	hw->hw_addr1 = (uint32_t *)pci_dev->bar1;
-	hw->hw_addr0 = (uint32_t *)pci_dev->bar0;
+	hw->hw_addr1 = (uint32_t *) (long) pci_dev->bar1;
+	hw->hw_addr0 = (uint32_t *) (long) pci_dev->bar0;
 
 	rc = uk_netdev_drv_register(&hw->netdev, a, drv_name);
 	if (rc < 0) {
