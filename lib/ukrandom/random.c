@@ -28,69 +28,45 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <string.h>
-#include <uk/swrand.h>
+#include <uk/random.h>
 #include <uk/config.h>
 #include <uk/print.h>
 #include <uk/init.h>
+#include <uk/arch/random.h>
 
-__u32 uk_swrandr_gen_seed32(void)
+int uk_swrand_init(void);
+
+__u32 uk_swrand_randr(void);
+
+void uk_random_fill_buffer(void *buf, size_t buflen)
 {
-	__u32 val;
-
-#ifdef CONFIG_LIBUKSWRAND_INITIALSEED_TIME
-	val = (__u32)ukplat_wall_clock();
-#endif
-
-#ifdef CONFIG_LIBUKSWRAND_INITIALSEED_RDRAND
-	asm volatile ("rdrand %%eax;"
-		: "=a" (val));
-#endif
-
-#ifdef CONFIG_LIBUKSWRAND_INITIALSEED_USECONSTANT
-	val = CONFIG_LIBUKSWRAND_INITIALSEED_CONSTANT;
-#endif
-
-	return val;
-}
-
-ssize_t uk_swrand_fill_buffer(void *buf, size_t buflen)
-{
-	size_t step, chunk_size, i;
+	__sz step, chunk_size, i;
 	__u32 rd;
 
 	step = sizeof(__u32);
 	chunk_size = buflen % step;
 
 	for (i = 0; i < buflen - chunk_size; i += step)
-		*(__u32 *)((char *) buf + i) = uk_swrand_randr();
+		*(__u32 *)((char *)buf + i) = uk_swrand_randr();
 
 	/* fill the remaining bytes of the buffer */
 	if (chunk_size > 0) {
 		rd = uk_swrand_randr();
 		memcpy(buf + i, &rd, chunk_size);
 	}
-
-	return buflen;
 }
 
-static int _uk_swrand_init(struct uk_init_ctx *ictx __unused)
+static int uk_random_init(struct uk_init_ctx *ictx __unused)
 {
-	unsigned int i;
-#ifdef CONFIG_LIBUKSWRAND_CHACHA
-	unsigned int seedc = 10;
-	__u32 seedv[10];
-#else
-	unsigned int seedc = 2;
-	__u32 seedv[2];
-#endif
-	uk_pr_info("Initialize random number generator...\n");
+	int res;
 
-	for (i = 0; i < seedc; i++)
-		seedv[i] = uk_swrandr_gen_seed32();
+	res = ukarch_random_init();
+	if (unlikely(res)) {
+		uk_pr_err("Could not initialize the HWRNG (%d)\n", res);
+		return res;
+	}
 
-	uk_swrand_init_r(&uk_swrand_def, seedc, seedv);
-
-	return seedc;
+	return uk_swrand_init();
 }
 
-uk_early_initcall(_uk_swrand_init, 0x0);
+uk_early_initcall(uk_random_init, 0);

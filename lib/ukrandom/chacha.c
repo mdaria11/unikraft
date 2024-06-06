@@ -31,10 +31,23 @@
  */
 
 #include <string.h>
-#include <uk/swrand.h>
 #include <uk/print.h>
 #include <uk/assert.h>
 #include <uk/ctors.h>
+#include <uk/random.h>
+#include <uk/arch/random.h>
+#include <uk/plat/lcpu.h>
+
+/*
+ * ChaCha20 requires eight 32-bit integers for the key and two 32-bit integers
+ * for the nonce, hence the seed length is 10.
+ * RFC7539 specifies three 32-bit integers for the nonce, but the reference
+ * implementation uses only two:
+ * http://cr.yp.to/streamciphers/timings/estreambench/submissions/salsa20/chacha8/ref/chacha.c
+ *
+ * TODO: bring the nonce-size in-line with the RFC.
+ */
+#define CHACHA_SEED_LENGTH 10
 
 struct uk_swrand {
 	int k;
@@ -46,28 +59,28 @@ struct uk_swrand uk_swrand_def;
 /* This value isn't important, as long as it's sufficiently asymmetric */
 static const char sigma[16] = "expand 32-byte k";
 
-static inline __u32 _uk_rotl32(__u32 v, int c)
+static inline __u32 uk_rotl32(__u32 v, int c)
 {
 	return (v << c) | (v >> (32 - c));
 }
 
-static inline void _uk_quarterround(__u32 x[16], int a, int b, int c, int d)
+static inline void uk_quarterround(__u32 x[16], int a, int b, int c, int d)
 {
 	x[a] = x[a] + x[b];
-	x[d] = _uk_rotl32(x[d] ^ x[a], 16);
+	x[d] = uk_rotl32(x[d] ^ x[a], 16);
 
 	x[c] = x[c] + x[d];
-	x[b] = _uk_rotl32(x[b] ^ x[c], 12);
+	x[b] = uk_rotl32(x[b] ^ x[c], 12);
 
 	x[a] = x[a] + x[b];
-	x[d] = _uk_rotl32(x[d] ^ x[a], 8);
+	x[d] = uk_rotl32(x[d] ^ x[a], 8);
 
 	x[c] = x[c] + x[d];
-	x[b] = _uk_rotl32(x[b] ^ x[c], 7);
+	x[b] = uk_rotl32(x[b] ^ x[c], 7);
 }
 
 static inline void
-_uk_salsa20_wordtobyte(__u32 output[16], const __u32 input[16])
+uk_salsa20_wordtobyte(__u32 output[16], const __u32 input[16])
 {
 	__u32 i;
 
@@ -75,21 +88,21 @@ _uk_salsa20_wordtobyte(__u32 output[16], const __u32 input[16])
 		output[i] = input[i];
 
 	for (i = 8; i > 0; i -= 2) {
-		_uk_quarterround(output, 0, 4, 8, 12);
-		_uk_quarterround(output, 1, 5, 9, 13);
-		_uk_quarterround(output, 2, 6, 10, 14);
-		_uk_quarterround(output, 3, 7, 11, 15);
-		_uk_quarterround(output, 0, 5, 10, 15);
-		_uk_quarterround(output, 1, 6, 11, 12);
-		_uk_quarterround(output, 2, 7, 8, 13);
-		_uk_quarterround(output, 3, 4, 9, 14);
+		uk_quarterround(output, 0, 4, 8, 12);
+		uk_quarterround(output, 1, 5, 9, 13);
+		uk_quarterround(output, 2, 6, 10, 14);
+		uk_quarterround(output, 3, 7, 11, 15);
+		uk_quarterround(output, 0, 5, 10, 15);
+		uk_quarterround(output, 1, 6, 11, 12);
+		uk_quarterround(output, 2, 7, 8, 13);
+		uk_quarterround(output, 3, 4, 9, 14);
 	}
 
 	for (i = 0; i < 16; i++)
 		output[i] += input[i];
 }
 
-static inline void _uk_key_setup(struct uk_swrand *r, __u32 k[8])
+static inline void uk_key_setup(struct uk_swrand *r, __u32 k[8])
 {
 	int i;
 
@@ -100,7 +113,7 @@ static inline void _uk_key_setup(struct uk_swrand *r, __u32 k[8])
 		r->input[i] = ((__u32 *)sigma)[i];
 }
 
-static inline void _uk_iv_setup(struct uk_swrand *r, __u32 iv[2])
+static inline void uk_iv_setup(struct uk_swrand *r, __u32 iv[2])
 {
 	r->input[12] = 0;
 	r->input[13] = 0;
@@ -108,33 +121,54 @@ static inline void _uk_iv_setup(struct uk_swrand *r, __u32 iv[2])
 	r->input[15] = iv[1];
 }
 
-static inline __u32 _infvec_val(unsigned int c, const __u32 v[],
-		unsigned int pos)
+static inline __u32 infvec_val(unsigned int c, const __u32 v[],
+			       unsigned int pos)
 {
 	if (c == 0)
 		return 0x0;
 	return v[pos % c];
 }
 
-void uk_swrand_init_r(struct uk_swrand *r, unsigned int seedc,
-		const __u32 seedv[])
+static void chacha_init(struct uk_swrand *r, unsigned int seedc,
+			const __u32 seedv[])
 {
-	__u32 i;
-
 	UK_ASSERT(r);
 	/* Initialize chacha */
-	__u32 k[8], iv[2];
+	__u32 k[8], iv[2], i;
 
 	for (i = 0; i < 8; i++)
-		k[i] = _infvec_val(10, seedv, i);
+		k[i] = infvec_val(CHACHA_SEED_LENGTH, seedv, i);
 
-	iv[0] = _infvec_val(seedc, seedv, i);
-	iv[1] = _infvec_val(seedc, seedv, i + 1);
+	iv[0] = infvec_val(seedc, seedv, i);
+	iv[1] = infvec_val(seedc, seedv, i + 1);
 
-	_uk_key_setup(r, k);
-	_uk_iv_setup(r, iv);
+	uk_key_setup(r, k);
+	uk_iv_setup(r, iv);
 
 	r->k = 16;
+}
+
+int uk_swrand_init(void)
+{
+	unsigned int seedc = CHACHA_SEED_LENGTH;
+	__u32 seedv[CHACHA_SEED_LENGTH];
+	unsigned int i;
+	int ret;
+
+	uk_pr_info("Initialize random number generator...\n");
+
+	for (i = 0; i < seedc; i++) {
+		ret = ukarch_random_seed_u32(&seedv[i]);
+		if (unlikely(ret)) {
+			uk_pr_err("Could not generate random seed\n");
+			return ret;
+		}
+	}
+
+	chacha_init(&uk_swrand_def, seedc, seedv);
+
+	/* The initialization of swrand never fails */
+	return 0;
 }
 
 __u32 uk_swrand_randr_r(struct uk_swrand *r)
@@ -142,7 +176,7 @@ __u32 uk_swrand_randr_r(struct uk_swrand *r)
 	__u32 res;
 
 	for (;;) {
-		_uk_salsa20_wordtobyte(r->output, r->input);
+		uk_salsa20_wordtobyte(r->output, r->input);
 		r->input[12] = r->input[12] + 1;
 		if (r->input[12] == 0)
 			r->input[13]++;
@@ -155,4 +189,20 @@ __u32 uk_swrand_randr_r(struct uk_swrand *r)
 
 		r->k = 0;
 	}
+}
+
+/* Uses the pre-initialized default generator  */
+/* TODO: Revisit with multi-CPU support */
+__u32 uk_swrand_randr(void)
+{
+	unsigned long iflags;
+	__u32 ret;
+
+	UK_ASSERT(!ukplat_lcpu_irqs_disabled());
+
+	iflags = ukplat_lcpu_save_irqf();
+	ret = uk_swrand_randr_r(&uk_swrand_def);
+	ukplat_lcpu_restore_irqf(iflags);
+
+	return ret;
 }

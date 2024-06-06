@@ -30,20 +30,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _SYS_RANDOM_H
-#define _SYS_RANDOM_H
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <string.h>
+#include <sys/random.h>
+#include <uk/essentials.h>
+#include <uk/random.h>
+#include <uk/syscall.h>
 
-#include <sys/types.h>
-
-#define GRND_NONBLOCK     0x01
-#define GRND_RANDOM       0x02
-
-ssize_t getrandom(void *buf, size_t buflen, unsigned int flags);
-
-#ifdef __cplusplus
+UK_SYSCALL_R_DEFINE(ssize_t, getrandom,
+		    void *, buf, size_t, buflen,
+		    unsigned int, flags)
+{
+	uk_random_fill_buffer(buf, buflen);
+	return buflen;
 }
-#endif
-#endif

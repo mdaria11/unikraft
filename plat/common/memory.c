@@ -81,15 +81,17 @@ void *ukplat_memregion_alloc(__sz size, int type, __u16 flags)
 		UK_ASSERT_VALID_FREE_MRD(mrd);
 		UK_ASSERT(mrd->pbase <= __U64_MAX - size);
 
-		pstart = ALIGN_UP(mrd->pbase, __PAGE_SIZE);
-		pend = pstart + size;
-
 		if ((mrd->flags & UKPLAT_MEMRF_PERMS) !=
 			    (UKPLAT_MEMRF_READ | UKPLAT_MEMRF_WRITE))
 			return NULL;
 
-		ostart = mrd->pbase;
 		olen = mrd->len;
+		if (olen < size)
+			continue;
+
+		ostart = mrd->pbase;
+		pstart = ALIGN_UP(mrd->pbase, __PAGE_SIZE);
+		pend = pstart + size;
 
 		/* If fragmenting this memory region leaves it with length 0,
 		 * then simply overwrite and return it instead.
@@ -231,11 +233,12 @@ static inline void overlapping_mrd_fixup(struct ukplat_memregion_list *list,
 		 * a new one if the left region is larger than the right region.
 		 */
 		} else {
-			__sz len = ml->pbase + ml->pg_count * PAGE_SIZE -
-				   mr->pbase - mr->pg_count * PAGE_SIZE;
+			__ssz len = ml->pbase + ml->pg_count * PAGE_SIZE -
+				    mr->pbase - mr->pg_count * PAGE_SIZE;
 			__uptr base = PAGE_ALIGN_UP(mr->pbase + mr->len);
 
-			if (RANGE_CONTAIN(ml->pbase, ml->pg_count * PAGE_SIZE,
+			if (len > 0 &&
+			    RANGE_CONTAIN(ml->pbase, ml->pg_count * PAGE_SIZE,
 					  mr->pbase, mr->pg_count * PAGE_SIZE))
 				/* len here is basically ml_end - mr_end. Thus,
 				 * len == 0 can happen only if mr is at the end
@@ -256,9 +259,15 @@ static inline void overlapping_mrd_fixup(struct ukplat_memregion_list *list,
 					}, ridx + 1);
 
 			/* Drop the fraction of ml that overlaps with mr */
-			ml->len = (mr->pbase + mr->pg_off) -
-				  (ml->pbase + ml->pg_off);
-			ml->pg_count = PAGE_COUNT(ml->pg_off + ml->len);
+			if (ml->type == UKPLAT_MEMRT_FREE) {
+				ml->len = PAGE_ALIGN_DOWN(mr->pbase -
+							  ml->pbase);
+				ml->pg_count = PAGE_COUNT(ml->len);
+			} else {
+				ml->pg_count = PAGE_COUNT(ml->pg_off + ml->len);
+				ml->len = (mr->pbase + mr->pg_off) -
+					  (ml->pbase + ml->pg_off);
+			}
 		}
 	}
 }
@@ -364,15 +373,6 @@ void ukplat_memregion_list_coalesce(struct ukplat_memregion_list *list)
 				 * and of different flags.
 				 */
 				UK_ASSERT(ml->flags == mr->flags);
-
-				/* We do not allow overlaps of memory regions
-				 * whose resource page offset into their region
-				 * is not equal to 0. Regions don't that meet
-				 * this condition are hand-inserted by us and
-				 * should not overlap.
-				 */
-				UK_ASSERT(!ml->pg_off);
-				UK_ASSERT(!mr->pg_off);
 				UK_ASSERT(PAGE_ALIGNED(ml->pbase));
 				UK_ASSERT(PAGE_ALIGNED(mr->pbase));
 
