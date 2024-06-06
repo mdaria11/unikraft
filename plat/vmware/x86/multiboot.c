@@ -130,7 +130,6 @@ void multiboot_entry(struct lcpu *lcpu, struct multiboot_info *mi)
 		     offset += m->size + sizeof(m->size)) {
 			m = (void *)(__uptr)(mi->mmap_addr + offset);
 
-			/* Skip the BIOS area */
 			start = MAX(m->addr, __PAGE_SIZE);
 			end   = m->addr + m->len;
 			if (unlikely(end <= start || end - start < PAGE_SIZE))
@@ -164,7 +163,7 @@ void multiboot_entry(struct lcpu *lcpu, struct multiboot_info *mi)
 	}
 
 	ukplat_memregion_list_coalesce(&bi->mrds);
-	
+
 	rc = ukplat_memregion_alloc_sipi_vect();
 	if (unlikely(rc))
 			multiboot_crash("Could not insert SIPI vector region", rc);
