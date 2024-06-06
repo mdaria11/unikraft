@@ -50,10 +50,21 @@ void multiboot_entry(struct lcpu *lcpu, struct multiboot_info *mi)
 	__sz offset, cmdline_len;
 	__paddr_t start, end;
 	__u32 i;
+	int rc;
 
 	bi = ukplat_bootinfo_get();
 	if (unlikely(!bi))
 		multiboot_crash("Incompatible or corrupted bootinfo", -EINVAL);
+
+	/* We have to call this here as the very early do_uk_reloc32 relocator
+		* does not also relocate the UKPLAT_MEMRT_KERNEL mrd's like its C
+		* equivalent, do_uk_reloc, does.
+		*/
+	do_uk_reloc_kmrds(0, 0);
+	/* Ensure that the memory map contains the legacy high mem area */
+	rc = ukplat_memregion_list_insert_legacy_hi_mem(&bi->mrds);
+	if (unlikely(rc))
+			multiboot_crash("Could not insert legacy memory region", rc);
 
 	/* Add the cmdline */
 	if (mi->flags & MULTIBOOT_INFO_CMDLINE) {
@@ -66,7 +77,7 @@ void multiboot_entry(struct lcpu *lcpu, struct multiboot_info *mi)
 			mrd.len = cmdline_len;
 			mrd.pg_count = PAGE_COUNT(mrd.pg_off + cmdline_len);
 			mrd.type = UKPLAT_MEMRT_CMDLINE;
-			mrd.flags = UKPLAT_MEMRF_READ | UKPLAT_MEMRF_MAP;
+			mrd.flags = UKPLAT_MEMRF_READ;
 
 			mrd_insert(bi, &mrd);
 
@@ -96,7 +107,7 @@ void multiboot_entry(struct lcpu *lcpu, struct multiboot_info *mi)
 			mrd.len = mods[i].mod_end - mods[i].mod_start;
 			mrd.pg_count = PAGE_COUNT(mrd.pg_off + mrd.len);
 			mrd.type  = UKPLAT_MEMRT_INITRD;
-			mrd.flags = UKPLAT_MEMRF_READ | UKPLAT_MEMRF_MAP;
+			mrd.flags = UKPLAT_MEMRF_READ;
 
 #ifdef CONFIG_UKPLAT_MEMRNAME
 			strncpy(mrd.name, (char *)(__uptr)mods[i].cmdline,
@@ -117,10 +128,10 @@ void multiboot_entry(struct lcpu *lcpu, struct multiboot_info *mi)
 	if (mi->flags & MULTIBOOT_INFO_MEM_MAP) {
 		for (offset = 0; offset < mi->mmap_length;
 		     offset += m->size + sizeof(m->size)) {
-			m = (multiboot_memory_map_t *)(mi->mmap_addr + offset);
+			m = (void *)(__uptr)(mi->mmap_addr + offset);
 
 			/* Skip the BIOS area */
-			start = MAX(m->addr, __END);
+			start = MAX(m->addr, __PAGE_SIZE);
 			end   = m->addr + m->len;
 			if (unlikely(end <= start || end - start < PAGE_SIZE))
 				continue;
@@ -141,8 +152,7 @@ void multiboot_entry(struct lcpu *lcpu, struct multiboot_info *mi)
 				mrd.len = PAGE_ALIGN_UP(mrd.len + mrd.pg_off);
 			} else {
 				mrd.type  = UKPLAT_MEMRT_RESERVED;
-				mrd.flags = UKPLAT_MEMRF_READ |
-					    UKPLAT_MEMRF_MAP;
+				mrd.flags = UKPLAT_MEMRF_READ;
 
 				/* We assume that reserved regions cannot
 				 * overlap with loaded modules.
@@ -152,6 +162,12 @@ void multiboot_entry(struct lcpu *lcpu, struct multiboot_info *mi)
 			mrd_insert(bi, &mrd);
 		}
 	}
+
+	ukplat_memregion_list_coalesce(&bi->mrds);
+	
+	rc = ukplat_memregion_alloc_sipi_vect();
+	if (unlikely(rc))
+			multiboot_crash("Could not insert SIPI vector region", rc);
 
 	_ukplat_entry(lcpu, bi);
 }
