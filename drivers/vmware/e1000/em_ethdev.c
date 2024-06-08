@@ -130,7 +130,7 @@ eth_em_dev_init(struct pci_device * pci_dev)
 
 	rc = uk_netdev_drv_register(&hw->netdev, a, drv_name);
 	if (rc < 0) {
-		uk_pr_err("Failed to register virtio-net device with libuknet\n");
+		uk_pr_err("Failed to register e1000 device with libuknet\n");
 		return 0;
 	}
 
