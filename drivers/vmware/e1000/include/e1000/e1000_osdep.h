@@ -148,16 +148,6 @@ static inline void e1000_write_addr_array(volatile void *addr, __u32 reg, __u32 
 
 /* Register READ/WRITE macros */
 
-#define PCI_CONF_READ(type, ret, a, s)					\
-	do {								\
-		uint32_t _conf_data;					\
-		outl(PCI_CONFIG_ADDR, (a) | PCI_CONF_##s);		\
-		_conf_data = ((inl(PCI_CONFIG_DATA) >> PCI_CONF_##s##_SHFT) \
-			      & PCI_CONF_##s##_MASK);			\
-		*(ret) = (type) _conf_data;				\
-	} while (0)
-
-
 #define E1000_READ_REG(hw, reg) \
 	e1000_read_addr((volatile void *) ((uint64_t) hw->pdev->bar0 & 0xFFFFFFF0), (reg))
 
