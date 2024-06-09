@@ -746,7 +746,6 @@ vmxnet3_dev_rx_queue_setup(struct uk_netdev *dev,
 			   uint16_t nb_desc,
 			   struct uk_netdev_rxqueue_conf *rx_conf)
 {
-	// const void *mz;
 	struct uk_netdev_rx_queue *rxq;
 	struct vmxnet3_hw *hw = to_vmxnet3dev(dev);
 	struct vmxnet3_cmd_ring *ring0, *ring1, *ring;
