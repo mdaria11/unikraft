@@ -556,13 +556,8 @@ vmxnet3_recv_pkts(struct uk_netdev *dev __unused,
 		}
 
 		/* Initialize newly received packet buffer */
-		// TODO; should be put in priv
-		// rxm->port = rxq->port_id;
-		// rxm->nb_segs = 1;
-		// rxm->next = NULL;
-		// rxm->pkt_len = (uint16_t)rcd->len;
-		// rxm->data_len = (uint16_t)rcd->len;
-		// rxm->data_off = RTE_PKTMBUF_HEADROOM;
+		rxm->len = (uint16_t)rcd->len;
+		rxm->next = NULL;
 		rxm->buflen = (uint16_t)rcd->len;
 		rxm->len = (uint16_t)rcd->len;
 		rxm->next = NULL;

@@ -71,7 +71,7 @@ struct vmxnet3_intr {
 
 struct vmxnet3_hw {
 	uint32_t *hw_addr0;	/* BAR0: PT-Passthrough Regs    */
-	uint32_t *hw_addr1;	/* BAR1: VD-Virtual Dcoolevice Regs */
+	uint32_t *hw_addr1;	/* BAR1: VD-Virtual Device Regs */
 
 	struct pci_device *pdev;
 	struct uk_netdev netdev;
