@@ -122,7 +122,7 @@ void multiboot_entry(struct lcpu *lcpu, struct multiboot_info *mi)
 	memset(mrd.name, 0, sizeof(mrd.name));
 #endif /* CONFIG_UKPLAT_MEMRNAME */
 
-	/* Add the map ranges above the BIOS area provided by the bootloader
+	/* Add the map ranges provided by the bootloader
 	 * from the multiboot info structure to the memory region list.
 	 */
 	if (mi->flags & MULTIBOOT_INFO_MEM_MAP) {
